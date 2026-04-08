@@ -2,970 +2,479 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>鸣鸣很忙 UGC情绪看板</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0a0d14; color: #e2e8f0; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; min-height: 100vh; }
-
-.header {
-  background: linear-gradient(135deg, #1a1d2e 0%, #0f1117 100%);
-  border-bottom: 1px solid #2d3a5a;
-  padding: 20px 28px 16px;
-  display: flex; align-items: flex-end; justify-content: space-between;
-}
-.header-left h1 { font-size: 22px; font-weight: 700; color: #e2e8f0; letter-spacing: 0.5px; }
-.header-left .subtitle { font-size: 13px; color: #8892b0; margin-top: 4px; }
-.header-stats { display: flex; gap: 24px; }
-.stat-item { text-align: right; }
-.stat-val { font-size: 20px; font-weight: 700; color: #6366f1; }
-.stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
-
-.tabs {
-  display: flex; gap: 0; padding: 16px 28px 0;
-  border-bottom: 1px solid #1e2438;
-}
-.tab-btn {
-  padding: 10px 22px; border: none; background: transparent;
-  color: #6b7280; font-size: 14px; cursor: pointer;
-  border-bottom: 2px solid transparent; transition: all 0.2s;
-  font-family: inherit;
-}
-.tab-btn:hover { color: #a5b4fc; }
-.tab-btn.active { color: #818cf8; border-bottom-color: #6366f1; font-weight: 600; }
-
-.tab-content { display: none; padding: 24px 28px; }
-.tab-content.active { display: block; }
-
-.card {
-  background: #1a1d2e; border-radius: 12px; padding: 20px 24px;
-  border: 1px solid #252a3f; margin-bottom: 20px;
-}
-.card-title {
-  font-size: 14px; font-weight: 600; color: #a5b4fc;
-  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
-}
-.chart { width: 100%; }
-
-.row { display: flex; gap: 20px; }
-.col-2 { flex: 2; min-width: 0; }
-.col-1 { flex: 1; min-width: 0; }
-
-/* Emotion pills */
-.pills-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.pill {
-  padding: 4px 12px; border-radius: 16px; font-size: 12px; cursor: pointer;
-  border: 1px solid transparent; transition: all 0.15s; user-select: none;
-}
-.pill.pos { background: rgba(74, 222, 128, 0.12); color: #4ade80; border-color: rgba(74, 222, 128, 0.25); }
-.pill.neg { background: rgba(248, 113, 113, 0.12); color: #f87171; border-color: rgba(248, 113, 113, 0.25); }
-.pill.active { opacity: 1; }
-.pill.inactive { opacity: 0.35; }
-
-.pill-actions { display: flex; gap: 8px; margin-bottom: 12px; }
-.pill-action-btn {
-  padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;
-  background: #252a3f; color: #8892b0; border: 1px solid #2d3a5a;
-}
-.pill-action-btn:hover { color: #a5b4fc; border-color: #6366f1; }
-
-/* Brand chips */
-.brand-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-.brand-chip {
-  padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer;
-  border: 2px solid #2d3a5a; background: #252a3f; color: #8892b0;
-  transition: all 0.15s;
-}
-.brand-chip.selected { color: #fff; border-color: transparent; }
-
-/* 惊喜专属配色 */
-.surprise-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(249,115,22,0.1));
-  border: 1px solid rgba(251,191,36,0.3); border-radius: 20px;
-  padding: 4px 14px; font-size: 12px; color: #fbbf24;
-}
-
-/* Note cards */
-.note-list { display: flex; flex-direction: column; gap: 10px; }
-.note-card {
-  background: #252a3f; border-radius: 8px; padding: 12px 16px;
-  border: 1px solid #2d3a5a; display: flex; gap: 12px; align-items: flex-start;
-}
-.note-img {
-  width: 48px; height: 48px; border-radius: 6px; object-fit: cover;
-  background: #1a1d2e; flex-shrink: 0;
-}
-.note-body { flex: 1; min-width: 0; }
-.note-text { font-size: 12px; color: #cbd5e1; line-height: 1.5; margin-bottom: 6px;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.note-meta { display: flex; gap: 12px; font-size: 11px; color: #6b7280; }
-.note-exposure { color: #818cf8; }
-.note-link { color: #fbbf24; text-decoration: none; }
-.note-link:hover { text-decoration: underline; }
-
-/* 时序图容器 */
-.timeline-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-.timeline-label { font-size: 12px; color: #6b7280; }
-
-.metrics-row { display: flex; gap: 16px; margin-bottom: 20px; }
-.metric-card {
-  flex: 1; background: #252a3f; border-radius: 10px; padding: 16px 20px;
-  border: 1px solid #2d3a5a;
-}
-.metric-val { font-size: 28px; font-weight: 700; color: #fbbf24; }
-.metric-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
-.metric-sub { font-size: 11px; color: #4ade80; margin-top: 2px; }
-
-/* TGI badge */
-.tgi-high { color: #4ade80; font-weight: 600; }
-.tgi-mid { color: #94a3b8; }
-.tgi-low { color: #f87171; }
-
-/* Table */
-.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.data-table th { padding: 8px 12px; text-align: left; color: #6b7280; font-weight: 500; border-bottom: 1px solid #252a3f; }
-.data-table td { padding: 8px 12px; border-bottom: 1px solid #1e2438; color: #cbd5e1; }
-.data-table tr:hover td { background: #252a3f; }
-
-.brand-color-zhao { color: #6366f1; }
-.brand-color-lingshi { color: #f59e0b; }
-.brand-color-ming { color: #10b981; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0d14;color:#e2e8f0;font-family:'PingFang SC','Microsoft YaHei',sans-serif;min-height:100vh}
+.hd{background:linear-gradient(135deg,#1a1d2e,#0f1117);border-bottom:1px solid #2d3a5a;padding:18px 28px 14px;display:flex;align-items:flex-end;justify-content:space-between}
+.hd h1{font-size:20px;font-weight:700;color:#e2e8f0}
+.hd .sub{font-size:12px;color:#8892b0;margin-top:3px}
+.hd-stats{display:flex;gap:28px}
+.sv{font-size:22px;font-weight:700;color:#6366f1}
+.sl{font-size:11px;color:#6b7280;margin-top:2px;text-align:right}
+.tabs{display:flex;padding:14px 28px 0;border-bottom:1px solid #1e2438}
+.tb{padding:9px 20px;border:none;background:transparent;color:#6b7280;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;font-family:inherit}
+.tb:hover{color:#a5b4fc}
+.tb.active{color:#818cf8;border-bottom-color:#6366f1;font-weight:600}
+.tp{display:none;padding:22px 28px}
+.tp.active{display:block}
+.card{background:#1a1d2e;border-radius:12px;padding:18px 22px;border:1px solid #252a3f;margin-bottom:18px}
+.ct{font-size:13px;font-weight:600;color:#a5b4fc;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row{display:flex;gap:18px}
+.c2{flex:2;min-width:0}
+.c1{flex:1;min-width:0}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.pill{padding:4px 11px;border-radius:14px;font-size:12px;cursor:pointer;border:1px solid transparent;transition:all .15s;user-select:none}
+.pill.pos{background:rgba(74,222,128,.12);color:#4ade80;border-color:rgba(74,222,128,.25)}
+.pill.neg{background:rgba(248,113,113,.12);color:#f87171;border-color:rgba(248,113,113,.25)}
+.pill.off{opacity:.28}
+.pact-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.pact{padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;background:#252a3f;color:#8892b0;border:1px solid #2d3a5a}
+.pact:hover{color:#a5b4fc;border-color:#6366f1}
+.metrics{display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.mc{flex:1;min-width:140px;background:#252a3f;border-radius:10px;padding:14px 18px;border:1px solid #2d3a5a}
+.mv{font-size:26px;font-weight:700;color:#fbbf24}
+.ml{font-size:11px;color:#6b7280;margin-top:3px}
+.ms{font-size:11px;color:#4ade80;margin-top:2px}
+.note-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.note-card{background:#252a3f;border-radius:8px;padding:10px 14px;border:1px solid #2d3a5a;display:flex;gap:10px;align-items:flex-start}
+.ni{width:44px;height:44px;border-radius:6px;object-fit:cover;background:#1a1d2e;flex-shrink:0}
+.nb{flex:1;min-width:0}
+.nt{font-size:12px;color:#cbd5e1;line-height:1.5;margin-bottom:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nm{display:flex;gap:10px;font-size:11px;color:#6b7280}
+.ne{color:#818cf8}
+.nk{color:#fbbf24;text-decoration:none}
+.nk:hover{text-decoration:underline}
+.sbadge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(249,115,22,.1));border:1px solid rgba(251,191,36,.3);border-radius:16px;padding:3px 12px;font-size:11px;color:#fbbf24}
+.mode-toggle{display:flex;border:1px solid #2d3a5a;border-radius:8px;overflow:hidden;width:fit-content}
+.mt-btn{padding:5px 14px;font-size:12px;cursor:pointer;background:#252a3f;color:#6b7280;border:none;font-family:inherit;transition:all .15s}
+.mt-btn.active{background:#6366f1;color:#fff}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-left">
+<div class="hd">
+  <div>
     <h1>🔥 鸣鸣很忙 UGC情绪看板</h1>
-    <div class="subtitle">赵一鸣 · 零食很忙 · 鸣鸣很忙 &nbsp;|&nbsp; 数据周期：2025W49 → 2026W9 &nbsp;|&nbsp; 规则引擎 v4</div>
+    <div class="sub">赵一鸣 · 零食很忙 · 鸣鸣很忙（合并）&nbsp;|&nbsp; 2025W49 → 2026W9 &nbsp;|&nbsp; 规则引擎 v4</div>
   </div>
-  <div class="header-stats">
-    <div class="stat-item">
-      <div class="stat-val" id="stat-total">-</div>
-      <div class="stat-label">有效打标笔记</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val" id="stat-weeks">-</div>
-      <div class="stat-label">覆盖周次</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val" id="stat-surprise">-</div>
-      <div class="stat-label">惊喜情绪占比</div>
-    </div>
+  <div class="hd-stats">
+    <div><div class="sv" id="s-total">-</div><div class="sl">有效打标笔记</div></div>
+    <div><div class="sv" id="s-weeks">-</div><div class="sl">覆盖周次</div></div>
+    <div><div class="sv" id="s-surprise">-</div><div class="sl">惊喜情绪占比</div></div>
+    <div><div class="sv" id="s-pos">-</div><div class="sl">正面情绪占比</div></div>
   </div>
 </div>
 
 <div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('tab-industry')">📊 行业情绪分布</button>
-  <button class="tab-btn" onclick="switchTab('tab-brand')">🏪 品牌对比</button>
-  <button class="tab-btn" onclick="switchTab('tab-surprise')">✨ 惊喜 Over Time</button>
-  <button class="tab-btn" onclick="switchTab('tab-deepdive')">🔬 品牌深挖</button>
+  <button class="tb active" onclick="go('t1',this)">📊 情绪分布</button>
+  <button class="tb" onclick="go('t2',this)">⏱ 情绪 Over Time</button>
+  <button class="tb" onclick="go('t3',this)">✨ 惊喜深挖</button>
 </div>
 
-<!-- Tab1: 行业情绪分布 -->
-<div id="tab-industry" class="tab-content active">
+<!-- Tab1 -->
+<div id="t1" class="tp active">
+  <div class="pact-row">
+    <button class="pact" onclick="t1All()">全选</button>
+    <button class="pact" onclick="t1Pos()">仅正面</button>
+    <button class="pact" onclick="t1Neg()">仅负面</button>
+  </div>
+  <div class="pills" id="t1pills"></div>
   <div class="row">
-    <div class="col-2">
+    <div class="c2">
       <div class="card">
-        <div class="card-title">情绪分布 — 全行业（赵一鸣·零食很忙·鸣鸣很忙）</div>
-        <div class="pills-container" id="t1-pills"></div>
-        <div class="chart" id="t1-bar" style="height:480px;"></div>
+        <div class="ct">情绪分布（条数排序）</div>
+        <div id="t1bar" style="height:500px"></div>
       </div>
     </div>
-    <div class="col-1">
+    <div class="c1">
       <div class="card">
-        <div class="card-title">正/负极性分布</div>
-        <div class="chart" id="t1-donut" style="height:240px;"></div>
+        <div class="ct">正/负极性分布</div>
+        <div id="t1donut" style="height:220px"></div>
       </div>
-      <div class="card" style="margin-top:0;">
-        <div class="card-title">周次情绪热度趋势</div>
-        <div class="chart" id="t1-trend" style="height:220px;"></div>
+      <div class="card">
+        <div class="ct">周次笔记量趋势</div>
+        <div id="t1week" style="height:200px"></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Tab2: 品牌对比 -->
-<div id="tab-brand" class="tab-content">
+<!-- Tab2 -->
+<div id="t2" class="tp">
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">选择要展示的情绪 <span style="color:#6b7280;font-size:11px;font-weight:400">（可多选，上限8个）</span></div>
+    <div class="pact-row">
+      <button class="pact" onclick="t2Preset('top5pos')">Top5正面</button>
+      <button class="pact" onclick="t2Preset('top5neg')">Top5负面</button>
+      <button class="pact" onclick="t2Preset('surprise')">仅惊喜</button>
+      <button class="pact" onclick="t2Preset('all')">Top8</button>
+      <span style="font-size:11px;color:#6b7280;margin-left:4px">已选：<span id="t2count" style="color:#818cf8">0</span>/8</span>
+    </div>
+    <div class="pills" id="t2pills"></div>
+  </div>
   <div class="card">
-    <div class="card-title">情绪筛选器（控制下方全部图表）</div>
-    <div class="pill-actions">
-      <button class="pill-action-btn" onclick="t2SelectAll()">全选</button>
-      <button class="pill-action-btn" onclick="t2SelectPos()">仅正面</button>
-      <button class="pill-action-btn" onclick="t2SelectNeg()">仅负面</button>
-      <button class="pill-action-btn" onclick="t2SelectTop()">Top12</button>
-    </div>
-    <div class="pills-container" id="t2-pills"></div>
-  </div>
-  
-  <div class="row">
-    <div class="col-2">
-      <div class="card">
-        <div class="card-title">品牌 × 情绪 SOV 热力图 (%)</div>
-        <div class="chart" id="t2-heatmap" style="height:320px;"></div>
+    <div class="ct" style="justify-content:space-between">
+      <span>各情绪趋势（周维度）</span>
+      <div class="mode-toggle">
+        <button class="mt-btn active" id="modeCount" onclick="setMode('count')">条数</button>
+        <button class="mt-btn" id="modeRate" onclick="setMode('rate')">占比 %</button>
       </div>
     </div>
-    <div class="col-1">
-      <div class="card">
-        <div class="card-title">品牌情绪 TGI 对比</div>
-        <div class="brand-chips" id="t2-brand-chips"></div>
-        <div class="chart" id="t2-tgi" style="height:280px;"></div>
-      </div>
-    </div>
+    <div id="t2line" style="height:360px"></div>
   </div>
-  
   <div class="card">
-    <div class="card-title">多品牌情绪雷达（Top10情绪）</div>
-    <div class="chart" id="t2-radar" style="height:360px;"></div>
+    <div class="ct">全情绪 × 周次 热力图（占比 %）</div>
+    <div id="t2heat" style="height:440px"></div>
   </div>
 </div>
 
-<!-- Tab3: 惊喜 Over Time -->
-<div id="tab-surprise" class="tab-content">
-  <div class="metrics-row" id="surprise-metrics"></div>
-  
+<!-- Tab3 -->
+<div id="t3" class="tp">
+  <div class="metrics" id="t3metrics"></div>
   <div class="row">
-    <div class="col-2">
+    <div class="c2">
       <div class="card">
-        <div class="card-title">
-          <span>惊喜情绪量</span>
-          <span class="surprise-badge">✨ 含被投喂 · 抽奖 · 中奖 · 超预期</span>
+        <div class="ct">
+          惊喜情绪量 over time
+          <span class="sbadge">✨ 含被投喂·抽奖·中奖·超预期</span>
         </div>
-        <div class="chart" id="t3-surprise-count" style="height:280px;"></div>
+        <div id="t3bar" style="height:260px"></div>
+      </div>
+      <div class="card">
+        <div class="ct">惊喜情绪率 (%) over time</div>
+        <div id="t3rate" style="height:220px"></div>
       </div>
     </div>
-    <div class="col-1">
+    <div class="c1">
       <div class="card">
-        <div class="card-title">惊喜情绪率 (%)</div>
-        <div class="chart" id="t3-surprise-rate" style="height:280px;"></div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="card">
-    <div class="card-title">品牌惊喜指数 over time（各品牌独立折线）</div>
-    <div class="chart" id="t3-surprise-line" style="height:320px;"></div>
-  </div>
-  
-  <div class="row">
-    <div class="col-1">
-      <div class="card">
-        <div class="card-title">🎁 赵一鸣 · 惊喜代表笔记 Top5</div>
-        <div class="note-list" id="surprise-notes-zhao"></div>
-      </div>
-    </div>
-    <div class="col-1">
-      <div class="card">
-        <div class="card-title">🎁 零食很忙 · 惊喜代表笔记 Top5</div>
-        <div class="note-list" id="surprise-notes-lingshi"></div>
+        <div class="ct">🎁 惊喜代表笔记 Top5（按曝光）</div>
+        <div class="note-list" id="t3notes"></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Tab4: 品牌深挖 -->
-<div id="tab-deepdive" class="tab-content">
-  <div class="brand-chips" id="t4-brand-chips"></div>
-  
-  <div class="card">
-    <div class="card-title">独立情绪筛选器</div>
-    <div class="pill-actions">
-      <button class="pill-action-btn" onclick="t4SelectAll()">全选</button>
-      <button class="pill-action-btn" onclick="t4SelectPos()">仅正面</button>
-      <button class="pill-action-btn" onclick="t4SelectNeg()">仅负面</button>
-    </div>
-    <div class="pills-container" id="t4-pills"></div>
-  </div>
-  
-  <div class="row">
-    <div class="col-1">
-      <div class="card">
-        <div class="card-title">品牌内情绪分布</div>
-        <div class="chart" id="t4-bar" style="height:420px;"></div>
-      </div>
-    </div>
-    <div class="col-1">
-      <div class="card">
-        <div class="card-title">SOV & TGI 明细表</div>
-        <div id="t4-table-container" style="overflow-x:auto;"></div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="card">
-    <div class="card-title">品牌情绪 over time（选中品牌）</div>
-    <div class="timeline-filters">
-      <span class="timeline-label">展示情绪：</span>
-      <select id="t4-emotion-select" onchange="renderT4Timeline()" style="background:#252a3f;color:#e2e8f0;border:1px solid #2d3a5a;border-radius:6px;padding:4px 8px;font-size:12px;">
-        <option value="惊喜">惊喜</option>
-        <option value="愉悦">愉悦</option>
-        <option value="好感">好感</option>
-        <option value="失望">失望</option>
-        <option value="迷恋感">迷恋感</option>
-      </select>
-    </div>
-    <div class="chart" id="t4-timeline" style="height:240px;"></div>
-  </div>
-</div>
-
+<!-- 数据注入（独立script，不受f-string影响） -->
 <script>
-// ==================== 数据注入 ====================
-const D = {"meta": {"title": "鸣鸣很忙 UGC情绪看板", "subtitle": "赵一鸣 · 零食很忙 · 鸣鸣很忙", "total_notes": 13796, "labeled_notes": 13796, "brand_count": 3, "week_range": "2025年第49周 ~ 2026年第9周", "brands": ["赵一鸣", "零食很忙", "鸣鸣很忙"], "weeks": ["2025年第49周", "2025年第50周", "2025年第51周", "2025年第52周", "2026年第1周", "2026年第2周", "2026年第3周", "2026年第4周", "2026年第5周", "2026年第6周", "2026年第7周", "2026年第8周", "2026年第9周"]}, "overview": {"emotion_dist": {"好感": 6442, "惊喜": 2488, "愉悦": 1897, "失望": 1013, "遗憾": 351, "迷恋感": 288, "逗趣感": 242, "狂喜": 146, "感激": 143, "探秘感": 138, "期待感": 113, "放松感": 79, "怀疑感": 63, "生气": 62, "反感": 49, "无奈": 35, "成就感": 35, "失落": 25, "庆幸感": 24, "困惑感": 23, "欣赏感": 21, "畅爽": 21, "崇拜感": 21, "烦躁": 17, "急迫感": 16, "信赖感": 15, "感动": 8, "纠结感": 8, "焦虑感": 8, "骄傲": 2}, "polarity_dist": {"负面": 1508, "正面": 12036, "混合": 252}, "top_emotions": ["好感", "惊喜", "愉悦", "失望", "遗憾", "迷恋感", "逗趣感", "狂喜", "感激", "探秘感", "期待感", "放松感", "怀疑感", "生气", "反感"]}, "brand_emotion": {"赵一鸣": {"失望": 887, "遗憾": 307, "探秘感": 117, "好感": 5494, "愉悦": 1679, "惊喜": 2014, "逗趣感": 216, "迷恋感": 259, "狂喜": 125, "放松感": 72, "期待感": 105, "烦躁": 15, "无奈": 31, "成就感": 30, "反感": 45, "怀疑感": 49, "失落": 22, "困惑感": 19, "感激": 126, "生气": 53, "庆幸感": 23, "欣赏感": 21, "纠结感": 8, "焦虑感": 8, "急迫感": 12, "畅爽": 16, "崇拜感": 20, "信赖感": 14, "感动": 6, "启迪感": 1, "骄傲": 1, "认同感": 1}, "零食很忙": {"愉悦": 217, "惊喜": 474, "好感": 899, "感动": 2, "失望": 123, "遗憾": 44, "迷恋感": 29, "逗趣感": 25, "探秘感": 21, "生气": 9, "急迫感": 4, "狂喜": 21, "放松感": 7, "畅爽": 5, "感激": 17, "成就感": 5, "骄傲": 1, "反感": 4, "怀疑感": 14, "困惑感": 4, "期待感": 8, "烦躁": 2, "信赖感": 1, "无奈": 4, "庆幸感": 1, "失落": 3, "启迪感": 1, "崇拜感": 1}, "鸣鸣很忙": {"好感": 49, "失望": 3, "逗趣感": 1, "愉悦": 1}}, "brand_total": {"赵一鸣": 11796, "零食很忙": 1946, "鸣鸣很忙": 54}, "sov_matrix": {"赵一鸣": {"好感": 46.6, "惊喜": 17.1, "愉悦": 14.2, "失望": 7.5, "遗憾": 2.6, "迷恋感": 2.2, "逗趣感": 1.8, "狂喜": 1.1, "感激": 1.1, "探秘感": 1.0, "期待感": 0.9, "放松感": 0.6, "怀疑感": 0.4, "生气": 0.4, "反感": 0.4}, "零食很忙": {"好感": 46.2, "惊喜": 24.4, "愉悦": 11.2, "失望": 6.3, "遗憾": 2.3, "迷恋感": 1.5, "逗趣感": 1.3, "狂喜": 1.1, "感激": 0.9, "探秘感": 1.1, "期待感": 0.4, "放松感": 0.4, "怀疑感": 0.7, "生气": 0.5, "反感": 0.2}, "鸣鸣很忙": {"好感": 90.7, "惊喜": 0.0, "愉悦": 1.9, "失望": 5.6, "遗憾": 0.0, "迷恋感": 0.0, "逗趣感": 1.9, "狂喜": 0.0, "感激": 0.0, "探秘感": 0.0, "期待感": 0.0, "放松感": 0.0, "怀疑感": 0.0, "生气": 0.0, "反感": 0.0}}, "tgi_matrix": {"赵一鸣": {"好感": 100.0, "惊喜": 95.0, "愉悦": 104.0, "失望": 102.0, "遗憾": 102.0, "迷恋感": 105.0, "逗趣感": 104.0, "狂喜": 100.0, "感激": 103.0, "探秘感": 99.0, "期待感": 109.0, "放松感": 107.0, "怀疑感": 91.0, "生气": 100.0, "反感": 107.0}, "零食很忙": {"好感": 99.0, "惊喜": 135.0, "愉悦": 81.0, "失望": 86.0, "遗憾": 89.0, "迷恋感": 71.0, "逗趣感": 73.0, "狂喜": 102.0, "感激": 84.0, "探秘感": 108.0, "期待感": 50.0, "放松感": 63.0, "怀疑感": 158.0, "生气": 103.0, "反感": 58.0}, "鸣鸣很忙": {"好感": 194.0, "惊喜": 0.0, "愉悦": 13.0, "失望": 76.0, "遗憾": 0.0, "迷恋感": 0.0, "逗趣感": 106.0, "狂喜": 0.0, "感激": 0.0, "探秘感": 0.0, "期待感": 0.0, "放松感": 0.0, "怀疑感": 0.0, "生气": 0.0, "反感": 0.0}}, "brand_week_emotion": {"赵一鸣": {"2025年第49周": {"逗趣感": 21, "好感": 384, "惊喜": 18, "失望": 59, "遗憾": 47, "愉悦": 126, "期待感": 10, "放松感": 14, "迷恋感": 14, "感激": 10, "失落": 2, "崇拜感": 3, "狂喜": 7, "生气": 6, "探秘感": 7, "怀疑感": 6, "成就感": 2, "无奈": 2, "启迪感": 1, "欣赏感": 2, "焦虑感": 1, "烦躁": 1, "庆幸感": 1, "困惑感": 1, "急迫感": 2}, "2025年第50周": {"好感": 421, "探秘感": 4, "愉悦": 166, "失望": 77, "反感": 5, "感激": 10, "惊喜": 27, "放松感": 9, "焦虑感": 1, "狂喜": 12, "急迫感": 2, "生气": 5, "逗趣感": 15, "庆幸感": 1, "期待感": 8, "迷恋感": 20, "遗憾": 20, "怀疑感": 6, "纠结感": 2, "感动": 2, "失落": 2, "困惑感": 2, "欣赏感": 1, "崇拜感": 1, "成就感": 2}, "2025年第51周": {"惊喜": 44, "好感": 438, "愉悦": 115, "失望": 72, "感激": 12, "期待感": 5, "欣赏感": 5, "遗憾": 23, "探秘感": 5, "畅爽": 2, "逗趣感": 24, "狂喜": 12, "迷恋感": 20, "怀疑感": 2, "放松感": 5, "生气": 2, "无奈": 2, "失落": 3, "反感": 1, "信赖感": 2, "困惑感": 2, "烦躁": 2, "成就感": 2, "急迫感": 1}, "2025年第52周": {"愉悦": 121, "惊喜": 30, "好感": 450, "失望": 53, "逗趣感": 22, "怀疑感": 3, "迷恋感": 20, "感激": 16, "遗憾": 24, "反感": 3, "生气": 3, "狂喜": 7, "探秘感": 14, "烦躁": 2, "失落": 1, "成就感": 4, "放松感": 6, "畅爽": 1, "期待感": 8, "欣赏感": 1, "庆幸感": 2, "无奈": 1, "急迫感": 1, "崇拜感": 1, "焦虑感": 1}, "2026年第1周": {"好感": 437, "烦躁": 3, "愉悦": 121, "失望": 64, "无奈": 4, "成就感": 2, "逗趣感": 17, "探秘感": 10, "遗憾": 13, "迷恋感": 28, "困惑感": 1, "欣赏感": 2, "惊喜": 22, "期待感": 5, "反感": 4, "崇拜感": 1, "庆幸感": 2, "狂喜": 13, "感激": 6, "急迫感": 2, "怀疑感": 7, "纠结感": 2, "生气": 3, "焦虑感": 1, "放松感": 3, "感动": 1, "失落": 2, "认同感": 1}, "2026年第2周": {"愉悦": 160, "好感": 510, "失望": 91, "庆幸感": 3, "感激": 12, "遗憾": 19, "失落": 6, "狂喜": 11, "逗趣感": 22, "期待感": 14, "惊喜": 20, "放松感": 4, "迷恋感": 14, "探秘感": 10, "生气": 4, "怀疑感": 4, "畅爽": 3, "急迫感": 2, "反感": 3, "崇拜感": 1, "成就感": 1, "欣赏感": 2, "困惑感": 1, "信赖感": 1, "无奈": 1}, "2026年第3周": {"失望": 73, "探秘感": 15, "好感": 459, "狂喜": 21, "迷恋感": 34, "愉悦": 162, "失落": 3, "逗趣感": 21, "烦躁": 1, "遗憾": 15, "感激": 13, "成就感": 3, "期待感": 9, "畅爽": 4, "惊喜": 26, "庆幸感": 5, "怀疑感": 2, "信赖感": 2, "生气": 5, "崇拜感": 1, "欣赏感": 3, "无奈": 4, "困惑感": 1, "放松感": 3, "感动": 1}, "2026年第4周": {"惊喜": 88, "迷恋感": 29, "愉悦": 142, "好感": 404, "失望": 52, "逗趣感": 19, "无奈": 2, "怀疑感": 4, "生气": 3, "期待感": 7, "庆幸感": 3, "遗憾": 24, "放松感": 6, "狂喜": 12, "纠结感": 1, "探秘感": 15, "感动": 2, "焦虑感": 2, "信赖感": 1, "失落": 1, "感激": 7, "成就感": 1, "崇拜感": 2, "反感": 4, "困惑感": 2}, "2026年第5周": {"遗憾": 28, "好感": 461, "失望": 93, "惊喜": 792, "愉悦": 143, "成就感": 5, "狂喜": 8, "期待感": 5, "迷恋感": 22, "探秘感": 5, "反感": 7, "放松感": 6, "逗趣感": 10, "怀疑感": 3, "畅爽": 1, "欣赏感": 3, "生气": 3, "感激": 10, "庆幸感": 2, "无奈": 2, "崇拜感": 3, "焦虑感": 1, "困惑感": 2, "信赖感": 2}, "2026年第6周": {"愉悦": 133, "好感": 431, "放松感": 4, "困惑感": 2, "惊喜": 586, "逗趣感": 17, "失望": 88, "遗憾": 36, "感激": 6, "生气": 4, "探秘感": 12, "迷恋感": 16, "狂喜": 4, "无奈": 6, "畅爽": 1, "失落": 1, "信赖感": 3, "怀疑感": 4, "反感": 4, "期待感": 10, "庆幸感": 1, "崇拜感": 1, "纠结感": 1, "成就感": 3, "欣赏感": 1, "急迫感": 1, "烦躁": 2}, "2026年第7周": {"好感": 346, "愉悦": 126, "失望": 73, "探秘感": 11, "期待感": 6, "惊喜": 321, "遗憾": 25, "怀疑感": 4, "迷恋感": 19, "反感": 5, "畅爽": 2, "逗趣感": 10, "放松感": 8, "狂喜": 13, "感激": 8, "无奈": 1, "困惑感": 3, "失落": 1, "崇拜感": 3, "生气": 7, "焦虑感": 1, "庆幸感": 2, "纠结感": 1, "信赖感": 2, "烦躁": 1, "成就感": 1}, "2026年第8周": {"好感": 341, "愉悦": 73, "期待感": 9, "失望": 46, "遗憾": 14, "狂喜": 2, "探秘感": 4, "迷恋感": 15, "感激": 8, "惊喜": 28, "急迫感": 1, "成就感": 1, "反感": 5, "逗趣感": 8, "烦躁": 1, "怀疑感": 2, "生气": 4, "信赖感": 1, "畅爽": 1, "放松感": 1, "困惑感": 1}, "2026年第9周": {"逗趣感": 10, "好感": 412, "遗憾": 19, "失望": 46, "愉悦": 91, "纠结感": 1, "成就感": 3, "放松感": 3, "探秘感": 5, "惊喜": 12, "无奈": 6, "生气": 4, "烦躁": 2, "狂喜": 3, "怀疑感": 2, "期待感": 9, "感激": 8, "迷恋感": 8, "反感": 4, "困惑感": 1, "庆幸感": 1, "崇拜感": 3, "欣赏感": 1, "骄傲": 1, "畅爽": 1}}, "零食很忙": {"2025年第49周": {"好感": 69, "感动": 1, "愉悦": 17, "惊喜": 8, "急迫感": 1, "失望": 8, "逗趣感": 1, "狂喜": 2, "放松感": 2, "感激": 2, "期待感": 1, "遗憾": 4, "迷恋感": 3, "探秘感": 2, "崇拜感": 1}, "2025年第50周": {"惊喜": 5, "好感": 74, "遗憾": 3, "愉悦": 24, "失望": 7, "畅爽": 2, "逗趣感": 5, "放松感": 1, "怀疑感": 1, "生气": 1, "反感": 2, "成就感": 1, "狂喜": 1, "急迫感": 1, "感激": 1, "探秘感": 2, "迷恋感": 2}, "2025年第51周": {"惊喜": 2, "失望": 5, "好感": 58, "感动": 1, "愉悦": 19, "探秘感": 6, "感激": 2, "遗憾": 1, "狂喜": 3, "困惑感": 1, "畅爽": 2, "怀疑感": 1, "失落": 1, "逗趣感": 1, "期待感": 1, "迷恋感": 1, "放松感": 1}, "2025年第52周": {"愉悦": 20, "好感": 64, "失望": 6, "感激": 8, "成就感": 1, "遗憾": 4, "反感": 1, "无奈": 1, "迷恋感": 1, "惊喜": 4, "逗趣感": 2, "探秘感": 1, "怀疑感": 1, "急迫感": 1, "狂喜": 1}, "2026年第1周": {"失望": 7, "逗趣感": 3, "好感": 55, "迷恋感": 5, "愉悦": 12, "遗憾": 4, "狂喜": 2, "困惑感": 1, "怀疑感": 2, "探秘感": 1, "惊喜": 6}, "2026年第2周": {"愉悦": 20, "好感": 78, "遗憾": 4, "生气": 2, "探秘感": 2, "迷恋感": 6, "骄傲": 1, "怀疑感": 1, "失望": 6, "狂喜": 3, "失落": 1, "期待感": 1, "惊喜": 2, "放松感": 1}, "2026年第3周": {"好感": 84, "迷恋感": 3, "愉悦": 30, "失望": 7, "遗憾": 3, "惊喜": 4, "狂喜": 3, "逗趣感": 3, "反感": 1, "期待感": 1, "烦躁": 1, "探秘感": 1, "感激": 2, "失落": 1}, "2026年第4周": {"好感": 77, "愉悦": 14, "失望": 9, "生气": 3, "惊喜": 30, "期待感": 1, "信赖感": 1, "无奈": 1, "感激": 1, "逗趣感": 2, "迷恋感": 1, "遗憾": 1, "成就感": 1, "畅爽": 1}, "2026年第5周": {"好感": 83, "愉悦": 13, "惊喜": 156, "探秘感": 3, "失望": 19, "狂喜": 4, "逗趣感": 1, "急迫感": 1, "怀疑感": 2, "生气": 1, "遗憾": 4, "庆幸感": 1, "启迪感": 1, "迷恋感": 1, "成就感": 1}, "2026年第6周": {"惊喜": 211, "好感": 55, "愉悦": 17, "失望": 32, "探秘感": 1, "生气": 1, "困惑感": 1, "怀疑感": 3, "遗憾": 6, "放松感": 1, "无奈": 2, "逗趣感": 4, "迷恋感": 2, "期待感": 1, "感激": 1}, "2026年第7周": {"惊喜": 41, "好感": 50, "愉悦": 11, "遗憾": 5, "怀疑感": 3, "失望": 10, "期待感": 1, "探秘感": 1, "迷恋感": 2, "狂喜": 1}, "2026年第8周": {"好感": 58, "愉悦": 7, "惊喜": 3, "遗憾": 2, "逗趣感": 1, "探秘感": 1, "失望": 2, "迷恋感": 1}, "2026年第9周": {"好感": 94, "愉悦": 13, "失望": 5, "惊喜": 2, "成就感": 1, "烦躁": 1, "遗憾": 3, "狂喜": 1, "放松感": 1, "生气": 1, "迷恋感": 1, "期待感": 1, "逗趣感": 2, "困惑感": 1}}, "鸣鸣很忙": {"2025年第49周": {}, "2025年第50周": {"失望": 1, "好感": 3}, "2025年第51周": {"好感": 1}, "2025年第52周": {}, "2026年第1周": {}, "2026年第2周": {"好感": 3}, "2026年第3周": {"好感": 6}, "2026年第4周": {"好感": 11, "逗趣感": 1}, "2026年第5周": {"失望": 2, "好感": 19}, "2026年第6周": {"好感": 3}, "2026年第7周": {"愉悦": 1, "好感": 1}, "2026年第8周": {"好感": 2}, "2026年第9周": {}}}, "brand_week_total": {"赵一鸣": {"2025年第49周": 747, "2025年第50周": 821, "2025年第51周": 801, "2025年第52周": 795, "2026年第1周": 777, "2026年第2周": 919, "2026年第3周": 886, "2026年第4周": 833, "2026年第5周": 1617, "2026年第6周": 1378, "2026年第7周": 1000, "2026年第8周": 566, "2026年第9周": 656}, "零食很忙": {"2025年第49周": 122, "2025年第50周": 133, "2025年第51周": 106, "2025年第52周": 116, "2026年第1周": 98, "2026年第2周": 128, "2026年第3周": 144, "2026年第4周": 143, "2026年第5周": 291, "2026年第6周": 338, "2026年第7周": 125, "2026年第8周": 75, "2026年第9周": 127}, "鸣鸣很忙": {"2025年第49周": 0, "2025年第50周": 4, "2025年第51周": 1, "2025年第52周": 0, "2026年第1周": 0, "2026年第2周": 3, "2026年第3周": 6, "2026年第4周": 12, "2026年第5周": 21, "2026年第6周": 3, "2026年第7周": 2, "2026年第8周": 2, "2026年第9周": 0}}, "surprise_over_time": {"赵一鸣": {"weeks": ["2025年第49周", "2025年第50周", "2025年第51周", "2025年第52周", "2026年第1周", "2026年第2周", "2026年第3周", "2026年第4周", "2026年第5周", "2026年第6周", "2026年第7周", "2026年第8周", "2026年第9周"], "counts": [18, 27, 44, 30, 22, 20, 26, 88, 792, 586, 321, 28, 12], "rates": [2.4, 3.3, 5.5, 3.8, 2.8, 2.2, 2.9, 10.6, 49.0, 42.5, 32.1, 4.9, 1.8]}, "零食很忙": {"weeks": ["2025年第49周", "2025年第50周", "2025年第51周", "2025年第52周", "2026年第1周", "2026年第2周", "2026年第3周", "2026年第4周", "2026年第5周", "2026年第6周", "2026年第7周", "2026年第8周", "2026年第9周"], "counts": [8, 5, 2, 4, 6, 2, 4, 30, 156, 211, 41, 3, 2], "rates": [6.6, 3.8, 1.9, 3.4, 6.1, 1.6, 2.8, 21.0, 53.6, 62.4, 32.8, 4.0, 1.6]}, "鸣鸣很忙": {"weeks": ["2025年第49周", "2025年第50周", "2025年第51周", "2025年第52周", "2026年第1周", "2026年第2周", "2026年第3周", "2026年第4周", "2026年第5周", "2026年第6周", "2026年第7周", "2026年第8周", "2026年第9周"], "counts": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "rates": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}}, "top_surprise_notes": {"赵一鸣": [{"note_id": "694555f8000000001e039fcf", "note_url": "https://www.xiaohongshu.com/discovery/item/694555f8000000001e039fcf", "image_url": "http://sns-img-qn.xhscdn.com/1040g00831q9cl93k7u0049vq2281vks2caaul08?imageView2/2/w/540/format/jpg/q/75", "week": "2025年第51周", "brand": "赵一鸣", "text": "绝了，竟然好吃到这种程度！#零食[话题]##零食[话题]# #零食测评[话题]# #零食推荐[话题]# #零食分享[话题]# #赵一鸣[话题]# #闺蜜分享[话题]# ", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 3837384}, {"note_id": "6973544d000000001a02e9f2", "note_url": "https://www.xiaohongshu.com/discovery/item/6973544d000000001a02e9f2", "image_url": "http://sns-img-qn.xhscdn.com/spectrum/1040g34o31rma4l2h243g5n33j0sk19d2eaf1eb0?imageView2/2/w/540/format/jpg/q/75", "week": "2026年第4周", "brand": "赵一鸣", "text": "被招财猫投喂的零食大礼盒，惊喜掉落中！新岁伊始，谁还没实现零食自由？别家猫咪只会招财，这只招财猫还会给你送吃的！零食很忙 × 赵一鸣零食 强强联手来搞事情啦！✨ 承包你的年货好彩头，把满满年味带回家～招财猫的投喂已送达🚚 你的新年零食，零食很忙和赵一鸣零食承包了！不管是宅家追剧，还是亲友聚会这一波零食大礼盒，绝对是你的年味“天菜”！🎁 惊喜清单公开：①. 赵一鸣零食大礼盒一份（内含：脆升升薯条原味*1+豪味来手撕猪肉脯蜜汁味*1+优乐美红豆奶茶*1+有零有食冻干草莓*1+臭宝爆爆浓汤柳州螺蛳粉*1+农亨岩烧海苔原味*1奥利奥薄脆酸甜草莓味*1乐事黄瓜味*1），共250份②. 零食很忙零食大礼盒", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 2840114}, {"note_id": "6976aeaf000000001a02ccb4", "note_url": "https://www.xiaohongshu.com/discovery/item/6976aeaf000000001a02ccb4", "image_url": "http://sns-img-qn.xhscdn.com/notes_pre_post/1040g3k031rpkri4dis5g45insk325d5cn777us0?imageView2/2/w/540/format/jpg/q/75", "week": "2026年第5周", "brand": "赵一鸣", "text": "赵一鸣新活动领取tips（自己的心得）需要整点进入先完成多个任务，等待下一个整点进入领取（因为完成任务会耗费大概一分钟，那时候已经抢完了，抢完了就无法进入活动页面了[捂脸R]别问我为什么知道的）#被招财猫投喂了[话题]#小技巧：1️⃣提前发布一个仅自己可见的帖子，带话题#被招财猫投喂了[话题]# 这样帖子下面就会有活动入口2️⃣必须整点点击活动入口，从你自己的帖子下面点就行，不要提前进入页面，会显示活动已完成（很重要‼️）3️⃣需要完成多个任务，有一个关注，有一个分享页面，有一个发带话题的帖子（我们已经提前完成了）最后是领取奖励，我发现即使我完成所有任务后如果券被抢光了还是无法进入页面领取奖励", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 1395886}, {"note_id": "694a614f000000001f0043e7", "note_url": "https://www.xiaohongshu.com/discovery/item/694a614f000000001f0043e7", "image_url": "http://sns-img-qn.xhscdn.com/note_pre_post_uhdr/1040g3r031qeagsqt7g0g4a5kniqlcfg4b9uodm8?imageView2/2/w/540/format/jpg/q/75", "week": "2025年第52周", "brand": "赵一鸣", "text": "赵一鸣！我真吹爆这个玉米！赵一鸣的新品！被包装耽误的烧烤玉米！真的跟烧烤摊味道一模一样！！看包装我以为一般般，没想到那么好吃！我在办公室热了一下，领导说：怎么办公室搞的跟烧烤店一样！我真吹爆这个玉米！都去买！#赵一鸣零食[话题]# ", "polarity": "正面", "emotion": "惊喜", "confidence": 0.8, "reasoning": "没想到（正面语境）", "exposure": 1101361}, {"note_id": "6978517e000000002203b482", "note_url": "https://www.xiaohongshu.com/discovery/item/6978517e000000002203b482", "image_url": "http://sns-img-qn.xhscdn.com/notes_pre_post/1040g3k831rr64o9his005nvg542g94p852elgh0?imageView2/2/w/540/format/jpg/q/75", "week": "2026年第5周", "brand": "赵一鸣", "text": "赵一鸣30元免费领取详细攻略被招财猫投喂了图1到图6是详细的步骤[斜眼R]其他需要注意的事项有1.时间点很重要早上8点到晚上10点，每一个整点都可以抢但是很多人进去都会显示已结束，下次早点哦并不是活动结束，而是这个整点已经被抢完了最简单的时间点是早上8点，这个时候人少，是最容易进去的！其他的整点时间提前一秒钟进去过，过早的话没有刷新，过晚的话很快就秒空了2.图5的这些任务提前完成比如你可以提前准备图片发帖的图片，提前关注，提前分享一旦整点你进去了图3这个页面没有领取到，也不要退出，下次整点的时候直接点图五最后一个领取3.现在活动刚开始，关注的人很多，但实际上他这个活动的时间是很长的。从1月26", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 786668}], "零食很忙": [{"note_id": "698d78c4000000001b01eab6", "note_url": "https://www.xiaohongshu.com/discovery/item/698d78c4000000001b01eab6", "image_url": "http://sns-img-qn.xhscdn.com/1040g2sg31sfr6gmnm8e05ngpjes083n84n5mqbg?imageView2/2/w/540/format/jpg/q/75", "week": "2026年第7周", "brand": "零食很忙", "text": "什么？10g？零食很忙？黄金抽中我了！😨只是去零食很忙囤点年前吃的零食，随手参加了个抽奖，竟然收到黄金了呜呜呜#来零食很忙抽金条[话题]##零食很忙[话题]##突如起来的惊喜[话题]##金条[话题]#", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 2487031}, {"note_id": "6982fba400000000210337a7", "note_url": "https://www.xiaohongshu.com/discovery/item/6982fba400000000210337a7", "image_url": "http://sns-img-qn.xhscdn.com/notes_pre_post/1040g3k831s5jc7cplk004brfh4ukru2hnnk98d8?imageView2/2/w/540/format/jpg/q/75", "week": "2026年第6周", "brand": "零食很忙", "text": "谁懂啊! 零食很忙的年货区直接把我拿捏了✨一走进去年味直接扑面而来，随手买都很好吃，今年的年货就由我做主！#被招财猫投喂了[话题]# #过年来零食很忙招个财[话题]# #零食很忙年货节[话题]# ", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 472534}, {"note_id": "6938e4cc000000001d03ebac", "note_url": "https://www.xiaohongshu.com/discovery/item/6938e4cc000000001d03ebac", "image_url": "http://sns-img-qn.xhscdn.com/notes_pre_post/1040g3k031pt83h11ju4049dju0l5s07472erqjo?imageView2/2/w/540/format/jpg/q/75", "week": "2025年第50周", "brand": "零食很忙", "text": "零食很忙也出烘焙甜品了！没想到零食很忙的面包还挺好吃的！#甜品治愈一切不开心[话题]# #零食很忙[话题]#", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 456331}, {"note_id": "69416966000000001e001c20", "note_url": "https://www.xiaohongshu.com/discovery/item/69416966000000001e001c20", "image_url": "http://sns-img-qn.xhscdn.com/notes_pre_post/1040g3k031q5hk0t4g2205ps620423ea2jf2b4tg?imageView2/2/w/540/format/jpg/q/75", "week": "2025年第51周", "brand": "零食很忙", "text": "沪漂两年｜在上海实现零食自由的三家店hello，大家好，今天和大家分享在上海经常去的几家零食店，真的都巨巨巨巨划算！1️⃣好想来会员日是88折，每月的8号，零食比较全面，和零食很忙类似。零食本身就比较便宜，p2是好想来拍的。2️⃣好特卖在上海开了很久的零食店，不止卖零食，还有护肤品、盲盒等，价格超划算！周三有🈵减38的活动，可以碰碰运气，基本上都能少个几块。3️⃣零食很忙会员日是88折，每月的7号，新人积分可以抽奖，我抽到了八爪烧。零食饮料都超便宜，p1是在店里实拍的。[清单R]小tips：周五到周日，可以使用碰一碰，偶尔还能减几块。以上是我沪漂两年经常去的平价零食店，希望能给你带来帮助呀🥰#", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 299910}, {"note_id": "6991c625000000000a03c02f", "note_url": "https://www.xiaohongshu.com/discovery/item/6991c625000000000a03c02f", "image_url": "http://sns-img-qn.xhscdn.com/1040g00831sk1fm665e6g5ovs3bfqahgi348ehho?imageView2/2/w/540/format/jpg/q/75", "week": "2026年第7周", "brand": "零食很忙", "text": "长沙发票抽奖今天开始啦!🎉🧧感觉长沙挺可怜的，由于不是试点城市，所以自己出钱搞活动，想让大家都有参与感，毕竟在长沙消费的人绝对比在株洲和湘潭多。。。结果还在小红书上面被别人骂玩不起⚠️要注意的是!!!长沙抽的是指定商户的消费券，不是现金，而且必须要在3.31之前消费完【可以交水电费和话费以及淘宝闪购点外卖可以用】。长沙最高奖50，其次30，然后20。一个月抽十次，一天只能抽一次，金额满100元，指定企业白名单。大家可以在下面互帮互助，熟知的哪些企业可以参与，哪些不可以已知✅中石油，中石化，易捷加油，小象超市，盒马，大碗先生(浏阳区域)，肯德基，麦当劳，必胜客，山姆(岳麓区)，宜家，沃尔玛，友信", "polarity": "正面", "emotion": "惊喜", "confidence": 0.85, "reasoning": "含惊喜/超预期/被投喂/抽奖/中奖表达", "exposure": 198216}], "鸣鸣很忙": []}, "week_emotion_total": {"2025年第49周": {"逗趣感": 22, "好感": 453, "惊喜": 26, "失望": 67, "遗憾": 51, "愉悦": 143, "期待感": 11, "感动": 1, "放松感": 16, "迷恋感": 17, "感激": 12, "失落": 2, "急迫感": 3, "崇拜感": 4, "狂喜": 9, "生气": 6, "探秘感": 9, "怀疑感": 6, "成就感": 2, "无奈": 2, "启迪感": 1, "欣赏感": 2, "焦虑感": 1, "烦躁": 1, "庆幸感": 1, "困惑感": 1}, "2025年第50周": {"好感": 498, "探秘感": 6, "愉悦": 190, "失望": 85, "惊喜": 32, "反感": 7, "遗憾": 23, "感激": 11, "放松感": 10, "焦虑感": 1, "狂喜": 13, "急迫感": 3, "生气": 6, "逗趣感": 20, "庆幸感": 1, "期待感": 8, "迷恋感": 22, "畅爽": 2, "怀疑感": 7, "纠结感": 2, "感动": 2, "失落": 2, "困惑感": 2, "欣赏感": 1, "成就感": 3, "崇拜感": 1}, "2025年第51周": {"惊喜": 46, "好感": 497, "愉悦": 134, "失望": 77, "感激": 14, "期待感": 6, "欣赏感": 5, "遗憾": 24, "探秘感": 11, "畅爽": 4, "逗趣感": 25, "感动": 1, "狂喜": 15, "迷恋感": 21, "怀疑感": 3, "放松感": 6, "生气": 2, "无奈": 2, "困惑感": 3, "失落": 4, "反感": 1, "信赖感": 2, "烦躁": 2, "成就感": 2, "急迫感": 1}, "2025年第52周": {"愉悦": 141, "惊喜": 34, "好感": 514, "失望": 59, "逗趣感": 24, "怀疑感": 4, "迷恋感": 21, "感激": 24, "遗憾": 28, "反感": 4, "生气": 3, "狂喜": 8, "探秘感": 15, "烦躁": 2, "失落": 1, "成就感": 5, "放松感": 6, "畅爽": 1, "期待感": 8, "欣赏感": 1, "无奈": 2, "庆幸感": 2, "急迫感": 2, "崇拜感": 1, "焦虑感": 1}, "2026年第1周": {"好感": 492, "烦躁": 3, "愉悦": 133, "失望": 71, "无奈": 4, "成就感": 2, "逗趣感": 20, "探秘感": 11, "遗憾": 17, "迷恋感": 33, "困惑感": 2, "欣赏感": 2, "惊喜": 28, "期待感": 5, "反感": 4, "崇拜感": 1, "庆幸感": 2, "狂喜": 15, "感激": 6, "急迫感": 2, "怀疑感": 9, "纠结感": 2, "生气": 3, "焦虑感": 1, "放松感": 3, "感动": 1, "失落": 2, "认同感": 1}, "2026年第2周": {"愉悦": 180, "好感": 591, "失望": 97, "庆幸感": 3, "感激": 12, "遗憾": 23, "失落": 7, "狂喜": 14, "逗趣感": 22, "期待感": 15, "惊喜": 22, "放松感": 5, "迷恋感": 20, "探秘感": 12, "生气": 6, "骄傲": 1, "怀疑感": 5, "畅爽": 3, "急迫感": 2, "反感": 3, "崇拜感": 1, "成就感": 1, "欣赏感": 2, "困惑感": 1, "信赖感": 1, "无奈": 1}, "2026年第3周": {"失望": 80, "探秘感": 16, "好感": 549, "狂喜": 24, "迷恋感": 37, "愉悦": 192, "失落": 4, "逗趣感": 24, "烦躁": 2, "遗憾": 18, "感激": 15, "成就感": 3, "期待感": 10, "畅爽": 4, "惊喜": 30, "庆幸感": 5, "怀疑感": 2, "信赖感": 2, "生气": 5, "反感": 1, "崇拜感": 1, "欣赏感": 3, "无奈": 4, "困惑感": 1, "放松感": 3, "感动": 1}, "2026年第4周": {"惊喜": 118, "迷恋感": 30, "愉悦": 156, "好感": 492, "失望": 61, "逗趣感": 22, "无奈": 3, "怀疑感": 4, "生气": 6, "期待感": 8, "庆幸感": 3, "遗憾": 25, "放松感": 6, "狂喜": 12, "纠结感": 1, "探秘感": 15, "感动": 2, "焦虑感": 2, "信赖感": 2, "失落": 1, "感激": 8, "成就感": 2, "崇拜感": 2, "反感": 4, "困惑感": 2, "畅爽": 1}, "2026年第5周": {"遗憾": 32, "好感": 563, "失望": 114, "惊喜": 948, "愉悦": 156, "成就感": 6, "狂喜": 12, "期待感": 5, "探秘感": 8, "迷恋感": 23, "反感": 7, "放松感": 6, "逗趣感": 11, "怀疑感": 5, "畅爽": 1, "欣赏感": 3, "生气": 4, "感激": 10, "庆幸感": 3, "无奈": 2, "急迫感": 1, "崇拜感": 3, "焦虑感": 1, "困惑感": 2, "启迪感": 1, "信赖感": 2}, "2026年第6周": {"愉悦": 150, "好感": 489, "放松感": 5, "惊喜": 797, "困惑感": 3, "逗趣感": 21, "失望": 120, "遗憾": 42, "感激": 7, "生气": 5, "探秘感": 13, "迷恋感": 18, "狂喜": 4, "无奈": 8, "畅爽": 1, "失落": 1, "信赖感": 3, "怀疑感": 7, "反感": 4, "期待感": 11, "庆幸感": 1, "崇拜感": 1, "纠结感": 1, "成就感": 3, "欣赏感": 1, "急迫感": 1, "烦躁": 2}, "2026年第7周": {"惊喜": 362, "好感": 397, "愉悦": 138, "失望": 83, "探秘感": 12, "期待感": 7, "遗憾": 30, "怀疑感": 7, "迷恋感": 21, "反感": 5, "畅爽": 2, "逗趣感": 10, "放松感": 8, "狂喜": 14, "感激": 8, "无奈": 1, "困惑感": 3, "失落": 1, "崇拜感": 3, "生气": 7, "焦虑感": 1, "庆幸感": 2, "纠结感": 1, "信赖感": 2, "烦躁": 1, "成就感": 1}, "2026年第8周": {"好感": 401, "愉悦": 80, "期待感": 9, "失望": 48, "遗憾": 16, "狂喜": 2, "探秘感": 5, "迷恋感": 16, "感激": 8, "惊喜": 31, "急迫感": 1, "成就感": 1, "反感": 5, "逗趣感": 9, "烦躁": 1, "怀疑感": 2, "生气": 4, "信赖感": 1, "畅爽": 1, "放松感": 1, "困惑感": 1}, "2026年第9周": {"逗趣感": 12, "好感": 506, "遗憾": 22, "失望": 51, "愉悦": 104, "纠结感": 1, "成就感": 4, "放松感": 4, "探秘感": 5, "惊喜": 14, "无奈": 6, "生气": 5, "烦躁": 3, "狂喜": 4, "怀疑感": 2, "期待感": 10, "感激": 8, "迷恋感": 9, "反感": 4, "困惑感": 2, "庆幸感": 1, "崇拜感": 3, "欣赏感": 1, "骄傲": 1, "畅爽": 1}}, "week_total": {"2025年第49周": 869, "2025年第50周": 958, "2025年第51周": 908, "2025年第52周": 911, "2026年第1周": 875, "2026年第2周": 1050, "2026年第3周": 1036, "2026年第4周": 988, "2026年第5周": 1929, "2026年第6周": 1719, "2026年第7周": 1127, "2026年第8周": 643, "2026年第9周": 783}, "global_emotion_share": {"失望": 7.34, "遗憾": 2.54, "愉悦": 13.75, "探秘感": 1.0, "好感": 46.69, "惊喜": 18.03, "逗趣感": 1.75, "迷恋感": 2.09, "狂喜": 1.06, "放松感": 0.57, "期待感": 0.82, "烦躁": 0.12, "无奈": 0.25, "成就感": 0.25, "反感": 0.36, "怀疑感": 0.46, "失落": 0.18, "困惑感": 0.17, "感激": 1.04, "感动": 0.06, "生气": 0.45, "庆幸感": 0.17, "欣赏感": 0.15, "纠结感": 0.06, "焦虑感": 0.06, "急迫感": 0.12, "畅爽": 0.15, "崇拜感": 0.15, "信赖感": 0.11, "骄傲": 0.01, "启迪感": 0.01, "认同感": 0.01}};
+window.__D = {"meta":{"title":"鸣鸣很忙 UGC情绪看板","total_notes":13796,"weeks":["2025年第49周","2025年第50周","2025年第51周","2025年第52周","2026年第1周","2026年第2周","2026年第3周","2026年第4周","2026年第5周","2026年第6周","2026年第7周","2026年第8周","2026年第9周"],"brand":"鸣鸣很忙","week_range":"2025年第49周 ~ 2026年第9周"},"overview":{"emotion_dist":{"好感":6442,"惊喜":2488,"愉悦":1897,"失望":1013,"遗憾":351,"迷恋感":288,"逗趣感":242,"狂喜":146,"感激":143,"探秘感":138,"期待感":113,"放松感":79,"怀疑感":63,"生气":62,"反感":49,"无奈":35,"成就感":35,"失落":25,"庆幸感":24,"困惑感":23,"欣赏感":21,"畅爽":21,"崇拜感":21,"烦躁":17,"急迫感":16,"信赖感":15,"感动":8,"纠结感":8,"焦虑感":8,"骄傲":2},"polarity_dist":{"负面":1508,"正面":12036,"混合":252},"top_emotions":["好感","惊喜","愉悦","失望","遗憾","迷恋感","逗趣感","狂喜","感激","探秘感","期待感","放松感","怀疑感","生气","反感","无奈","成就感","失落","庆幸感","困惑感","欣赏感","畅爽","崇拜感","烦躁","急迫感","信赖感","感动","纠结感","焦虑感","骄傲"]},"week_emotion":{"2025年第49周":{"逗趣感":22,"好感":453,"惊喜":26,"失望":67,"遗憾":51,"愉悦":143,"期待感":11,"感动":1,"放松感":16,"迷恋感":17,"感激":12,"失落":2,"急迫感":3,"崇拜感":4,"狂喜":9,"生气":6,"探秘感":9,"怀疑感":6,"成就感":2,"无奈":2,"启迪感":1,"欣赏感":2,"焦虑感":1,"烦躁":1,"庆幸感":1,"困惑感":1},"2025年第50周":{"好感":498,"探秘感":6,"愉悦":190,"失望":85,"惊喜":32,"反感":7,"遗憾":23,"感激":11,"放松感":10,"焦虑感":1,"狂喜":13,"急迫感":3,"生气":6,"逗趣感":20,"庆幸感":1,"期待感":8,"迷恋感":22,"畅爽":2,"怀疑感":7,"纠结感":2,"感动":2,"失落":2,"困惑感":2,"欣赏感":1,"成就感":3,"崇拜感":1},"2025年第51周":{"惊喜":46,"好感":497,"愉悦":134,"失望":77,"感激":14,"期待感":6,"欣赏感":5,"遗憾":24,"探秘感":11,"畅爽":4,"逗趣感":25,"感动":1,"狂喜":15,"迷恋感":21,"怀疑感":3,"放松感":6,"生气":2,"无奈":2,"困惑感":3,"失落":4,"反感":1,"信赖感":2,"烦躁":2,"成就感":2,"急迫感":1},"2025年第52周":{"愉悦":141,"惊喜":34,"好感":514,"失望":59,"逗趣感":24,"怀疑感":4,"迷恋感":21,"感激":24,"遗憾":28,"反感":4,"生气":3,"狂喜":8,"探秘感":15,"烦躁":2,"失落":1,"成就感":5,"放松感":6,"畅爽":1,"期待感":8,"欣赏感":1,"无奈":2,"庆幸感":2,"急迫感":2,"崇拜感":1,"焦虑感":1},"2026年第1周":{"好感":492,"烦躁":3,"愉悦":133,"失望":71,"无奈":4,"成就感":2,"逗趣感":20,"探秘感":11,"遗憾":17,"迷恋感":33,"困惑感":2,"欣赏感":2,"惊喜":28,"期待感":5,"反感":4,"崇拜感":1,"庆幸感":2,"狂喜":15,"感激":6,"急迫感":2,"怀疑感":9,"纠结感":2,"生气":3,"焦虑感":1,"放松感":3,"感动":1,"失落":2,"认同感":1},"2026年第2周":{"愉悦":180,"好感":591,"失望":97,"庆幸感":3,"感激":12,"遗憾":23,"失落":7,"狂喜":14,"逗趣感":22,"期待感":15,"惊喜":22,"放松感":5,"迷恋感":20,"探秘感":12,"生气":6,"骄傲":1,"怀疑感":5,"畅爽":3,"急迫感":2,"反感":3,"崇拜感":1,"成就感":1,"欣赏感":2,"困惑感":1,"信赖感":1,"无奈":1},"2026年第3周":{"失望":80,"探秘感":16,"好感":549,"狂喜":24,"迷恋感":37,"愉悦":192,"失落":4,"逗趣感":24,"烦躁":2,"遗憾":18,"感激":15,"成就感":3,"期待感":10,"畅爽":4,"惊喜":30,"庆幸感":5,"怀疑感":2,"信赖感":2,"生气":5,"反感":1,"崇拜感":1,"欣赏感":3,"无奈":4,"困惑感":1,"放松感":3,"感动":1},"2026年第4周":{"惊喜":118,"迷恋感":30,"愉悦":156,"好感":492,"失望":61,"逗趣感":22,"无奈":3,"怀疑感":4,"生气":6,"期待感":8,"庆幸感":3,"遗憾":25,"放松感":6,"狂喜":12,"纠结感":1,"探秘感":15,"感动":2,"焦虑感":2,"信赖感":2,"失落":1,"感激":8,"成就感":2,"崇拜感":2,"反感":4,"困惑感":2,"畅爽":1},"2026年第5周":{"遗憾":32,"好感":563,"失望":114,"惊喜":948,"愉悦":156,"成就感":6,"狂喜":12,"期待感":5,"探秘感":8,"迷恋感":23,"反感":7,"放松感":6,"逗趣感":11,"怀疑感":5,"畅爽":1,"欣赏感":3,"生气":4,"感激":10,"庆幸感":3,"无奈":2,"急迫感":1,"崇拜感":3,"焦虑感":1,"困惑感":2,"启迪感":1,"信赖感":2},"2026年第6周":{"愉悦":150,"好感":489,"放松感":5,"惊喜":797,"困惑感":3,"逗趣感":21,"失望":120,"遗憾":42,"感激":7,"生气":5,"探秘感":13,"迷恋感":18,"狂喜":4,"无奈":8,"畅爽":1,"失落":1,"信赖感":3,"怀疑感":7,"反感":4,"期待感":11,"庆幸感":1,"崇拜感":1,"纠结感":1,"成就感":3,"欣赏感":1,"急迫感":1,"烦躁":2},"2026年第7周":{"惊喜":362,"好感":397,"愉悦":138,"失望":83,"探秘感":12,"期待感":7,"遗憾":30,"怀疑感":7,"迷恋感":21,"反感":5,"畅爽":2,"逗趣感":10,"放松感":8,"狂喜":14,"感激":8,"无奈":1,"困惑感":3,"失落":1,"崇拜感":3,"生气":7,"焦虑感":1,"庆幸感":2,"纠结感":1,"信赖感":2,"烦躁":1,"成就感":1},"2026年第8周":{"好感":401,"愉悦":80,"期待感":9,"失望":48,"遗憾":16,"狂喜":2,"探秘感":5,"迷恋感":16,"感激":8,"惊喜":31,"急迫感":1,"成就感":1,"反感":5,"逗趣感":9,"烦躁":1,"怀疑感":2,"生气":4,"信赖感":1,"畅爽":1,"放松感":1,"困惑感":1},"2026年第9周":{"逗趣感":12,"好感":506,"遗憾":22,"失望":51,"愉悦":104,"纠结感":1,"成就感":4,"放松感":4,"探秘感":5,"惊喜":14,"无奈":6,"生气":5,"烦躁":3,"狂喜":4,"怀疑感":2,"期待感":10,"感激":8,"迷恋感":9,"反感":4,"困惑感":2,"庆幸感":1,"崇拜感":3,"欣赏感":1,"骄傲":1,"畅爽":1}},"week_total":{"2025年第49周":869,"2025年第50周":958,"2025年第51周":908,"2025年第52周":911,"2026年第1周":875,"2026年第2周":1050,"2026年第3周":1036,"2026年第4周":988,"2026年第5周":1929,"2026年第6周":1719,"2026年第7周":1127,"2026年第8周":643,"2026年第9周":783},"emotion_over_time":{"好感":{"counts":[453,498,497,514,492,591,549,492,563,489,397,401,506],"rates":[52.1,52.0,54.7,56.4,56.2,56.3,53.0,49.8,29.2,28.4,35.2,62.4,64.6]},"惊喜":{"counts":[26,32,46,34,28,22,30,118,948,797,362,31,14],"rates":[3.0,3.3,5.1,3.7,3.2,2.1,2.9,11.9,49.1,46.4,32.1,4.8,1.8]},"愉悦":{"counts":[143,190,134,141,133,180,192,156,156,150,138,80,104],"rates":[16.5,19.8,14.8,15.5,15.2,17.1,18.5,15.8,8.1,8.7,12.2,12.4,13.3]},"失望":{"counts":[67,85,77,59,71,97,80,61,114,120,83,48,51],"rates":[7.7,8.9,8.5,6.5,8.1,9.2,7.7,6.2,5.9,7.0,7.4,7.5,6.5]},"遗憾":{"counts":[51,23,24,28,17,23,18,25,32,42,30,16,22],"rates":[5.9,2.4,2.6,3.1,1.9,2.2,1.7,2.5,1.7,2.4,2.7,2.5,2.8]},"迷恋感":{"counts":[17,22,21,21,33,20,37,30,23,18,21,16,9],"rates":[2.0,2.3,2.3,2.3,3.8,1.9,3.6,3.0,1.2,1.0,1.9,2.5,1.1]},"逗趣感":{"counts":[22,20,25,24,20,22,24,22,11,21,10,9,12],"rates":[2.5,2.1,2.8,2.6,2.3,2.1,2.3,2.2,0.6,1.2,0.9,1.4,1.5]},"狂喜":{"counts":[9,13,15,8,15,14,24,12,12,4,14,2,4],"rates":[1.0,1.4,1.7,0.9,1.7,1.3,2.3,1.2,0.6,0.2,1.2,0.3,0.5]},"感激":{"counts":[12,11,14,24,6,12,15,8,10,7,8,8,8],"rates":[1.4,1.1,1.5,2.6,0.7,1.1,1.4,0.8,0.5,0.4,0.7,1.2,1.0]},"探秘感":{"counts":[9,6,11,15,11,12,16,15,8,13,12,5,5],"rates":[1.0,0.6,1.2,1.6,1.3,1.1,1.5,1.5,0.4,0.8,1.1,0.8,0.6]},"期待感":{"counts":[11,8,6,8,5,15,10,8,5,11,7,9,10],"rates":[1.3,0.8,0.7,0.9,0.6,1.4,1.0,0.8,0.3,0.6,0.6,1.4,1.3]},"放松感":{"counts":[16,10,6,6,3,5,3,6,6,5,8,1,4],"rates":[1.8,1.0,0.7,0.7,0.3,0.5,0.3,0.6,0.3,0.3,0.7,0.2,0.5]},"怀疑感":{"counts":[6,7,3,4,9,5,2,4,5,7,7,2,2],"rates":[0.7,0.7,0.3,0.4,1.0,0.5,0.2,0.4,0.3,0.4,0.6,0.3,0.3]},"生气":{"counts":[6,6,2,3,3,6,5,6,4,5,7,4,5],"rates":[0.7,0.6,0.2,0.3,0.3,0.6,0.5,0.6,0.2,0.3,0.6,0.6,0.6]},"反感":{"counts":[0,7,1,4,4,3,1,4,7,4,5,5,4],"rates":[0.0,0.7,0.1,0.4,0.5,0.3,0.1,0.4,0.4,0.2,0.4,0.8,0.5]},"无奈":{"counts":[2,0,2,2,4,1,4,3,2,8,1,0,6],"rates":[0.2,0.0,0.2,0.2,0.5,0.1,0.4,0.3,0.1,0.5,0.1,0.0,0.8]},"成就感":{"counts":[2,3,2,5,2,1,3,2,6,3,1,1,4],"rates":[0.2,0.3,0.2,0.5,0.2,0.1,0.3,0.2,0.3,0.2,0.1,0.2,0.5]},"失落":{"counts":[2,2,4,1,2,7,4,1,0,1,1,0,0],"rates":[0.2,0.2,0.4,0.1,0.2,0.7,0.4,0.1,0.0,0.1,0.1,0.0,0.0]},"庆幸感":{"counts":[1,1,0,2,2,3,5,3,3,1,2,0,1],"rates":[0.1,0.1,0.0,0.2,0.2,0.3,0.5,0.3,0.2,0.1,0.2,0.0,0.1]},"困惑感":{"counts":[1,2,3,0,2,1,1,2,2,3,3,1,2],"rates":[0.1,0.2,0.3,0.0,0.2,0.1,0.1,0.2,0.1,0.2,0.3,0.2,0.3]},"欣赏感":{"counts":[2,1,5,1,2,2,3,0,3,1,0,0,1],"rates":[0.2,0.1,0.6,0.1,0.2,0.2,0.3,0.0,0.2,0.1,0.0,0.0,0.1]},"畅爽":{"counts":[0,2,4,1,0,3,4,1,1,1,2,1,1],"rates":[0.0,0.2,0.4,0.1,0.0,0.3,0.4,0.1,0.1,0.1,0.2,0.2,0.1]},"崇拜感":{"counts":[4,1,0,1,1,1,1,2,3,1,3,0,3],"rates":[0.5,0.1,0.0,0.1,0.1,0.1,0.1,0.2,0.2,0.1,0.3,0.0,0.4]},"烦躁":{"counts":[1,0,2,2,3,0,2,0,0,2,1,1,3],"rates":[0.1,0.0,0.2,0.2,0.3,0.0,0.2,0.0,0.0,0.1,0.1,0.2,0.4]},"急迫感":{"counts":[3,3,1,2,2,2,0,0,1,1,0,1,0],"rates":[0.3,0.3,0.1,0.2,0.2,0.2,0.0,0.0,0.1,0.1,0.0,0.2,0.0]},"信赖感":{"counts":[0,0,2,0,0,1,2,2,2,3,2,1,0],"rates":[0.0,0.0,0.2,0.0,0.0,0.1,0.2,0.2,0.1,0.2,0.2,0.2,0.0]},"感动":{"counts":[1,2,1,0,1,0,1,2,0,0,0,0,0],"rates":[0.1,0.2,0.1,0.0,0.1,0.0,0.1,0.2,0.0,0.0,0.0,0.0,0.0]},"纠结感":{"counts":[0,2,0,0,2,0,0,1,0,1,1,0,1],"rates":[0.0,0.2,0.0,0.0,0.2,0.0,0.0,0.1,0.0,0.1,0.1,0.0,0.1]},"焦虑感":{"counts":[1,1,0,1,1,0,0,2,1,0,1,0,0],"rates":[0.1,0.1,0.0,0.1,0.1,0.0,0.0,0.2,0.1,0.0,0.1,0.0,0.0]},"骄傲":{"counts":[0,0,0,0,0,1,0,0,0,0,0,0,1],"rates":[0.0,0.0,0.0,0.0,0.0,0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.1]}},"surprise_notes":[{"note_id":"694555f8000000001e039fcf","note_url":"https://www.xiaohongshu.com/discovery/item/694555f8000000001e039fcf","image_url":"http://sns-img-qn.xhscdn.com/1040g00831q9cl93k7u0049vq2281vks2caaul08?imageView2/2/w/540/format/jpg/q/75","week":"2025年第51周","brand":"鸣鸣很忙","text":"绝了，竟然好吃到这种程度！#零食[话题]##零食[话题]# #零食测评[话题]# #零食推荐[话题]# #零食分享[话题]# #赵一鸣[话题]# #闺蜜分享[话题]# ","polarity":"正面","emotion":"惊喜","confidence":0.85,"reasoning":"含惊喜/超预期/被投喂/抽奖/中奖表达","exposure":3837384},{"note_id":"6973544d000000001a02e9f2","note_url":"https://www.xiaohongshu.com/discovery/item/6973544d000000001a02e9f2","image_url":"http://sns-img-qn.xhscdn.com/spectrum/1040g34o31rma4l2h243g5n33j0sk19d2eaf1eb0?imageView2/2/w/540/format/jpg/q/75","week":"2026年第4周","brand":"鸣鸣很忙","text":"被招财猫投喂的零食大礼盒，惊喜掉落中！新岁伊始，谁还没实现零食自由？别家猫咪只会招财，这只招财猫还会给你送吃的！零食很忙 × 赵一鸣零食 强强联手来搞事情啦！✨ 承包你的年货好彩头，把满满年味带回家～招财猫的投喂已送达🚚 你的新年零食，零食很忙和赵一鸣零食承包了！不管是宅家追剧，还是亲友聚会这一波零食大礼盒，绝对是你的年味“天菜”！🎁 惊喜清单公开：①. 赵一鸣零食大礼盒一份（内含：脆升升薯条原味*1+豪味来手撕猪肉脯蜜汁味*1+优乐美红豆奶茶*1+有零有食冻干草莓*1+臭宝爆爆浓汤柳州螺蛳粉*1+农亨岩烧海苔原味*1奥利奥薄脆酸甜草莓味*1乐事黄瓜味*1），共250份②. 零食很忙零食大礼盒","polarity":"正面","emotion":"惊喜","confidence":0.85,"reasoning":"含惊喜/超预期/被投喂/抽奖/中奖表达","exposure":2840114},{"note_id":"698d78c4000000001b01eab6","note_url":"https://www.xiaohongshu.com/discovery/item/698d78c4000000001b01eab6","image_url":"http://sns-img-qn.xhscdn.com/1040g2sg31sfr6gmnm8e05ngpjes083n84n5mqbg?imageView2/2/w/540/format/jpg/q/75","week":"2026年第7周","brand":"鸣鸣很忙","text":"什么？10g？零食很忙？黄金抽中我了！😨只是去零食很忙囤点年前吃的零食，随手参加了个抽奖，竟然收到黄金了呜呜呜#来零食很忙抽金条[话题]##零食很忙[话题]##突如起来的惊喜[话题]##金条[话题]#","polarity":"正面","emotion":"惊喜","confidence":0.85,"reasoning":"含惊喜/超预期/被投喂/抽奖/中奖表达","exposure":2487031},{"note_id":"6976aeaf000000001a02ccb4","note_url":"https://www.xiaohongshu.com/discovery/item/6976aeaf000000001a02ccb4","image_url":"http://sns-img-qn.xhscdn.com/notes_pre_post/1040g3k031rpkri4dis5g45insk325d5cn777us0?imageView2/2/w/540/format/jpg/q/75","week":"2026年第5周","brand":"鸣鸣很忙","text":"赵一鸣新活动领取tips（自己的心得）需要整点进入先完成多个任务，等待下一个整点进入领取（因为完成任务会耗费大概一分钟，那时候已经抢完了，抢完了就无法进入活动页面了[捂脸R]别问我为什么知道的）#被招财猫投喂了[话题]#小技巧：1️⃣提前发布一个仅自己可见的帖子，带话题#被招财猫投喂了[话题]# 这样帖子下面就会有活动入口2️⃣必须整点点击活动入口，从你自己的帖子下面点就行，不要提前进入页面，会显示活动已完成（很重要‼️）3️⃣需要完成多个任务，有一个关注，有一个分享页面，有一个发带话题的帖子（我们已经提前完成了）最后是领取奖励，我发现即使我完成所有任务后如果券被抢光了还是无法进入页面领取奖励","polarity":"正面","emotion":"惊喜","confidence":0.85,"reasoning":"含惊喜/超预期/被投喂/抽奖/中奖表达","exposure":1395886},{"note_id":"694a614f000000001f0043e7","note_url":"https://www.xiaohongshu.com/discovery/item/694a614f000000001f0043e7","image_url":"http://sns-img-qn.xhscdn.com/note_pre_post_uhdr/1040g3r031qeagsqt7g0g4a5kniqlcfg4b9uodm8?imageView2/2/w/540/format/jpg/q/75","week":"2025年第52周","brand":"鸣鸣很忙","text":"赵一鸣！我真吹爆这个玉米！赵一鸣的新品！被包装耽误的烧烤玉米！真的跟烧烤摊味道一模一样！！看包装我以为一般般，没想到那么好吃！我在办公室热了一下，领导说：怎么办公室搞的跟烧烤店一样！我真吹爆这个玉米！都去买！#赵一鸣零食[话题]# ","polarity":"正面","emotion":"惊喜","confidence":0.8,"reasoning":"没想到（正面语境）","exposure":1101361}]};
+window.__POS = ["惊喜","狂喜","愉悦","好感","迷恋感","感激","逗趣感","期待感","探秘感","放松感","急迫感","崇拜感","欣赏感","认同感","信赖感","成就感","庆幸感","启迪感","骄傲","激励感","信念感","被支持感","放心感","羡慕感","畅爽","感动"];
+window.__NEG = ["失望","生气","烦躁","反感","遗憾","怀疑感","失落","焦虑感","担心感","纠结感","困惑感","无奈","委屈","难过","倦怠感","无聊感","羞耻感","尴尬","同情感","挫败感","不甘","嫌恶"];
+</script>
 
-const POSITIVE_EMOTIONS = ["惊喜", "狂喜", "愉悦", "好感", "迷恋感", "感激", "逗趣感", "期待感", "探秘感", "放松感", "急迫感", "崇拜感", "欣赏感", "认同感", "信赖感", "成就感", "庆幸感", "启迪感", "骄傲", "激励感", "信念感", "被支持感", "放心感", "羡慕感", "畅爽", "感动"];
-const NEGATIVE_EMOTIONS = ["失望", "生气", "烦躁", "反感", "遗憾", "怀疑感", "失落", "焦虑感", "担心感", "纠结感", "困惑感", "无奈", "委屈", "难过", "倦怠感", "无聊感", "羞耻感", "尴尬", "同情感", "挫败感", "不甘", "嫌恶"];
+<!-- 逻辑脚本 -->
+<script>
 
-const BRAND_COLORS = {
-  '赵一鸣': '#6366f1',
-  '零食很忙': '#f59e0b',
-  '鸣鸣很忙': '#10b981',
-};
+var D=window.__D;
+var POS=window.__POS;
+var NEG=window.__NEG;
 
-const BRAND_IDS = {
-  '赵一鸣': 'zhao',
-  '零食很忙': 'lingshi',
-  '鸣鸣很忙': 'ming',
-};
+var WEEKS=D.meta.weeks;
+var WL=WEEKS.map(function(w){return w.replace('20','').replace('年第','W').replace('周','');});
+var EMOTIONS=D.overview.top_emotions;
+var DIST=D.overview.emotion_dist;
 
-// ==================== 工具函数 ====================
-function switchTab(id) {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+var EM_COLORS=['#6366f1','#f59e0b','#10b981','#f87171','#4ade80','#38bdf8','#e879f9','#fb923c','#34d399','#a78bfa','#fbbf24','#60a5fa','#f472b6','#c084fc','#818cf8'];
+
+function isPos(e){return POS.indexOf(e)>=0;}
+function isNeg(e){return NEG.indexOf(e)>=0;}
+function ec(e){return isPos(e)?'#4ade80':isNeg(e)?'#f87171':'#94a3b8';}
+function fmt(n){return n>=10000?(n/10000).toFixed(1)+'w':String(n);}
+function getOrInit(id,theme){
+  var el=document.getElementById(id);
+  return echarts.getInstanceByDom(el)||echarts.init(el,theme||'dark');
+}
+
+// ── Tab router ──
+function go(id,btn){
+  document.querySelectorAll('.tp').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.tb').forEach(function(el){el.classList.remove('active');});
   document.getElementById(id).classList.add('active');
-  event.target.classList.add('active');
-  // 触发图表渲染
-  setTimeout(() => {
-    if (id === 'tab-industry') renderTab1();
-    if (id === 'tab-brand') renderTab2();
-    if (id === 'tab-surprise') renderTab3();
-    if (id === 'tab-deepdive') renderTab4();
-  }, 50);
+  btn.classList.add('active');
+  setTimeout(function(){
+    if(id==='t1')renderT1();
+    if(id==='t2')renderT2();
+    if(id==='t3')renderT3();
+  },50);
 }
 
-function isPos(e) { return POSITIVE_EMOTIONS.includes(e); }
-function isNeg(e) { return NEGATIVE_EMOTIONS.includes(e); }
-
-function emotionColor(e) {
-  return isPos(e) ? '#4ade80' : isNeg(e) ? '#f87171' : '#94a3b8';
+// ── Stats ──
+function initStats(){
+  var tot=D.meta.total_notes;
+  document.getElementById('s-total').textContent=tot.toLocaleString();
+  document.getElementById('s-weeks').textContent=WEEKS.length+'周';
+  var sc=DIST['惊喜']||0;
+  document.getElementById('s-surprise').textContent=(sc/tot*100).toFixed(1)+'%';
+  var pc=D.overview.polarity_dist['正面']||0;
+  document.getElementById('s-pos').textContent=(pc/tot*100).toFixed(1)+'%';
 }
 
-function formatExposure(n) {
-  if (n >= 10000) return (n/10000).toFixed(1) + 'w';
-  return n.toString();
+// ══════════════════════════════════════════════════════
+// Tab1: 情绪分布
+// ══════════════════════════════════════════════════════
+var t1sel=EMOTIONS.slice();// all selected
+
+function t1Pills(){
+  var c=document.getElementById('t1pills');
+  c.innerHTML=EMOTIONS.map(function(e){
+    var on=t1sel.indexOf(e)>=0;
+    return '<span class="pill '+(isPos(e)?'pos':'neg')+' '+(on?'':'off')+'" onclick="t1Toggle(\''+e+'\')">'+e+'</span>';
+  }).join('');
+}
+function t1Toggle(e){
+  var i=t1sel.indexOf(e);
+  if(i>=0)t1sel.splice(i,1); else t1sel.push(e);
+  t1Pills();t1Bar();
+}
+function t1All(){t1sel=EMOTIONS.slice();t1Pills();t1Bar();}
+function t1Pos(){t1sel=EMOTIONS.filter(isPos);t1Pills();t1Bar();}
+function t1Neg(){t1sel=EMOTIONS.filter(isNeg);t1Pills();t1Bar();}
+
+function t1Bar(){
+  var ch=getOrInit('t1bar');
+  var es=EMOTIONS.filter(function(e){return t1sel.indexOf(e)>=0;})
+    .sort(function(a,b){return (DIST[b]||0)-(DIST[a]||0);});
+  ch.setOption({
+    backgroundColor:'transparent',
+    grid:{left:80,right:70,top:10,bottom:30},
+    xAxis:{type:'value',axisLabel:{color:'#6b7280',fontSize:11},splitLine:{lineStyle:{color:'#1e2438'}}},
+    yAxis:{type:'category',data:es,axisLabel:{color:'#e2e8f0',fontSize:12},axisLine:{lineStyle:{color:'#2d3a5a'}}},
+    tooltip:{trigger:'axis',formatter:function(p){return p[0].name+': '+p[0].value+' 条';}},
+    series:[{type:'bar',barMaxWidth:26,
+      data:es.map(function(e){return {value:DIST[e]||0,itemStyle:{color:ec(e),borderRadius:[0,3,3,0]}};}),
+      label:{show:true,position:'right',color:'#94a3b8',fontSize:11}
+    }]
+  },true);
 }
 
-function renderNotes(containerId, notes) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  if (!notes || notes.length === 0) {
-    el.innerHTML = '<div style="color:#6b7280;font-size:12px;">暂无数据</div>';
-    return;
-  }
-  el.innerHTML = notes.map(n => `
-    <div class="note-card">
-      <img class="note-img" src="${n.image_url || ''}" onerror="this.style.display='none'" />
-      <div class="note-body">
-        <div class="note-text">${n.text || ''}</div>
-        <div class="note-meta">
-          <span class="note-exposure">曝光 ${formatExposure(n.exposure || 0)}</span>
-          <span>置信度 ${Math.round((n.confidence||0)*100)}%</span>
-          <a class="note-link" href="${n.note_url || '#'}" target="_blank">→ 查看原文</a>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ==================== 初始化统计 ====================
-function initStats() {
-  const d = D;
-  document.getElementById('stat-total').textContent = d.meta.total_notes.toLocaleString();
-  document.getElementById('stat-weeks').textContent = d.meta.weeks.length + '周';
-  
-  // 惊喜占比
-  const surpriseCount = d.overview.emotion_dist['惊喜'] || 0;
-  const total = d.meta.total_notes;
-  document.getElementById('stat-surprise').textContent = (surpriseCount/total*100).toFixed(1) + '%';
-}
-
-// ==================== Tab1: 行业情绪分布 ====================
-let t1ActiveEmotions = null;
-
-function renderTab1Pills() {
-  const container = document.getElementById('t1-pills');
-  const allEmotions = Object.keys(D.overview.emotion_dist).sort((a,b) => D.overview.emotion_dist[b] - D.overview.emotion_dist[a]);
-  if (t1ActiveEmotions === null) t1ActiveEmotions = new Set(allEmotions);
-  
-  container.innerHTML = allEmotions.map(e => `
-    <span class="pill ${isPos(e)?'pos':'neg'} ${t1ActiveEmotions.has(e)?'active':'inactive'}"
-      onclick="t1ToggleEmotion('${e}')">${e}</span>
-  `).join('');
-}
-
-function t1ToggleEmotion(e) {
-  if (t1ActiveEmotions.has(e)) t1ActiveEmotions.delete(e);
-  else t1ActiveEmotions.add(e);
-  renderTab1Pills();
-  renderT1Bar();
-}
-
-function renderT1Bar() {
-  const chart = echarts.getInstanceByDom(document.getElementById('t1-bar')) 
-    || echarts.init(document.getElementById('t1-bar'), 'dark');
-  
-  const dist = D.overview.emotion_dist;
-  const emotions = Object.keys(dist)
-    .filter(e => t1ActiveEmotions.has(e))
-    .sort((a,b) => dist[b] - dist[a]);
-  
-  chart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 80, right: 60, top: 10, bottom: 30 },
-    xAxis: { type: 'value', axisLabel: { color: '#6b7280', fontSize: 11 }, splitLine: { lineStyle: { color: '#1e2438' } } },
-    yAxis: { type: 'category', data: emotions, axisLabel: { color: '#e2e8f0', fontSize: 12 },
-      axisLine: { lineStyle: { color: '#2d3a5a' } } },
-    tooltip: { trigger: 'axis', formatter: p => `${p[0].name}: ${p[0].value} 条` },
-    series: [{
-      type: 'bar',
-      data: emotions.map(e => ({
-        value: dist[e],
-        itemStyle: { color: emotionColor(e), borderRadius: [0,3,3,0] }
-      })),
-      barMaxWidth: 28,
-      label: { show: true, position: 'right', color: '#94a3b8', fontSize: 11,
-        formatter: p => p.value }
-    }],
-  });
-}
-
-function renderT1Donut() {
-  const chart = echarts.getInstanceByDom(document.getElementById('t1-donut'))
-    || echarts.init(document.getElementById('t1-donut'), 'dark');
-  
-  const pol = D.overview.polarity_dist;
-  chart.setOption({
-    backgroundColor: 'transparent',
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-    legend: { bottom: 0, textStyle: { color: '#8892b0', fontSize: 11 } },
-    series: [{
-      type: 'pie', radius: ['50%', '75%'],
-      center: ['50%', '45%'],
-      label: { show: true, color: '#e2e8f0', fontSize: 12,
-        formatter: '{b}\n{d}%' },
-      data: [
-        { name: '正面', value: pol['正面']||0, itemStyle: { color: '#4ade80' } },
-        { name: '负面', value: pol['负面']||0, itemStyle: { color: '#f87171' } },
-        { name: '混合', value: pol['混合']||0, itemStyle: { color: '#94a3b8' } },
+function t1Donut(){
+  var ch=getOrInit('t1donut');
+  var pol=D.overview.polarity_dist;
+  ch.setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'item',formatter:'{b}: {c} ({d}%)'},
+    legend:{bottom:0,textStyle:{color:'#8892b0',fontSize:11}},
+    series:[{type:'pie',radius:['48%','72%'],center:['50%','44%'],
+      label:{show:true,color:'#e2e8f0',fontSize:12,formatter:'{b}\n{d}%'},
+      data:[
+        {name:'正面',value:pol['正面']||0,itemStyle:{color:'#4ade80'}},
+        {name:'负面',value:pol['负面']||0,itemStyle:{color:'#f87171'}},
+        {name:'混合',value:pol['混合']||0,itemStyle:{color:'#94a3b8'}},
       ]
     }]
   });
 }
 
-function renderT1Trend() {
-  const chart = echarts.getInstanceByDom(document.getElementById('t1-trend'))
-    || echarts.init(document.getElementById('t1-trend'), 'dark');
-  
-  const weeks = D.meta.weeks;
-  const weekTotal = D.week_total;
-  
-  // 展示总量趋势 + 惊喜趋势
-  const totalData = weeks.map(w => weekTotal[w] || 0);
-  const surpriseData = weeks.map(w => (D.week_emotion_total[w] && D.week_emotion_total[w]['惊喜']) || 0);
-  
-  chart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 40, right: 20, top: 20, bottom: 60 },
-    tooltip: { trigger: 'axis' },
-    legend: { bottom: 0, textStyle: { color: '#8892b0', fontSize: 11 } },
-    xAxis: { type: 'category', data: weeks.map(w => w.replace('20','').replace('年第','W').replace('周','')),
-      axisLabel: { color: '#6b7280', fontSize: 10, rotate: 30 } },
-    yAxis: { type: 'value', axisLabel: { color: '#6b7280', fontSize: 11 }, splitLine: { lineStyle: { color: '#1e2438' } } },
-    series: [
-      { name: '总笔记数', type: 'bar', data: totalData, barMaxWidth: 20,
-        itemStyle: { color: 'rgba(99,102,241,0.4)' } },
-      { name: '惊喜', type: 'line', data: surpriseData,
-        lineStyle: { color: '#fbbf24', width: 2 },
-        itemStyle: { color: '#fbbf24' },
-        symbol: 'circle', symbolSize: 5, smooth: true },
-    ]
-  });
-}
-
-function renderTab1() {
-  renderTab1Pills();
-  renderT1Bar();
-  renderT1Donut();
-  renderT1Trend();
-}
-
-// ==================== Tab2: 品牌对比 ====================
-let t2ActiveEmotions = null;
-let t2ActiveBrands = new Set(D.meta.brands);
-
-function t2SelectAll() {
-  t2ActiveEmotions = new Set(Object.keys(D.overview.emotion_dist));
-  renderT2Pills(); renderT2Charts();
-}
-function t2SelectPos() {
-  t2ActiveEmotions = new Set(Object.keys(D.overview.emotion_dist).filter(isPos));
-  renderT2Pills(); renderT2Charts();
-}
-function t2SelectNeg() {
-  t2ActiveEmotions = new Set(Object.keys(D.overview.emotion_dist).filter(isNeg));
-  renderT2Pills(); renderT2Charts();
-}
-function t2SelectTop() {
-  t2ActiveEmotions = new Set(D.overview.top_emotions.slice(0,12));
-  renderT2Pills(); renderT2Charts();
-}
-
-function renderT2Pills() {
-  const container = document.getElementById('t2-pills');
-  const allEmotions = Object.keys(D.overview.emotion_dist).sort((a,b) => D.overview.emotion_dist[b] - D.overview.emotion_dist[a]);
-  if (t2ActiveEmotions === null) t2ActiveEmotions = new Set(D.overview.top_emotions.slice(0,12));
-  
-  container.innerHTML = allEmotions.map(e => `
-    <span class="pill ${isPos(e)?'pos':'neg'} ${t2ActiveEmotions.has(e)?'active':'inactive'}"
-      onclick="t2ToggleEmotion('${e}')">${e}</span>
-  `).join('');
-}
-
-function t2ToggleEmotion(e) {
-  if (t2ActiveEmotions.has(e)) t2ActiveEmotions.delete(e);
-  else t2ActiveEmotions.add(e);
-  renderT2Pills(); renderT2Charts();
-}
-
-function renderT2BrandChips() {
-  const container = document.getElementById('t2-brand-chips');
-  container.innerHTML = D.meta.brands.map((b, i) => `
-    <span class="brand-chip ${t2ActiveBrands.has(b)?'selected':''}"
-      style="${t2ActiveBrands.has(b)?`background:${BRAND_COLORS[b]};border-color:${BRAND_COLORS[b]};`:''}"
-      onclick="t2ToggleBrand('${b}')">${b}</span>
-  `).join('');
-}
-
-function t2ToggleBrand(b) {
-  if (t2ActiveBrands.has(b)) { if (t2ActiveBrands.size > 1) t2ActiveBrands.delete(b); }
-  else t2ActiveBrands.add(b);
-  renderT2BrandChips(); renderT2Charts();
-}
-
-function renderT2Heatmap() {
-  const chart = echarts.getInstanceByDom(document.getElementById('t2-heatmap'))
-    || echarts.init(document.getElementById('t2-heatmap'), 'dark');
-  
-  const emotions = D.overview.top_emotions.filter(e => t2ActiveEmotions.has(e));
-  const brands = D.meta.brands;
-  const sov = D.sov_matrix;
-  
-  const data = [];
-  let maxVal = 0;
-  brands.forEach((b, bi) => {
-    emotions.forEach((e, ei) => {
-      const v = (sov[b] && sov[b][e]) || 0;
-      data.push([ei, bi, v]);
-      if (v > maxVal) maxVal = v;
-    });
-  });
-  
-  chart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 80, right: 60, top: 10, bottom: 60 },
-    xAxis: { type: 'category', data: emotions,
-      axisLabel: { color: '#8892b0', fontSize: 11, rotate: 30 },
-      splitArea: { show: true, areaStyle: { color: ['#1a1d2e', '#252a3f'] } } },
-    yAxis: { type: 'category', data: brands,
-      axisLabel: { color: '#e2e8f0', fontSize: 13 },
-      splitArea: { show: true } },
-    visualMap: { min: 0, max: maxVal, calculable: true,
-      inRange: { color: ['#1a1d2e', '#4c1d95', '#7c3aed', '#a78bfa', '#c4b5fd'] },
-      textStyle: { color: '#8892b0' }, right: 0, top: 'center', itemHeight: 120 },
-    tooltip: {
-      formatter: p => `${brands[p.data[1]]} | ${emotions[p.data[0]]}<br>SOV: ${p.data[2]}%`
-    },
-    series: [{
-      type: 'heatmap', data: data,
-      label: { show: true, color: '#fff', fontSize: 10,
-        formatter: p => p.data[2] > 0 ? p.data[2] + '%' : '' }
+function t1Week(){
+  var ch=getOrInit('t1week');
+  var wt=D.week_total;
+  ch.setOption({
+    backgroundColor:'transparent',
+    grid:{left:40,right:10,top:10,bottom:54},
+    tooltip:{trigger:'axis'},
+    xAxis:{type:'category',data:WL,axisLabel:{color:'#6b7280',fontSize:10,rotate:35}},
+    yAxis:{type:'value',axisLabel:{color:'#6b7280',fontSize:11},splitLine:{lineStyle:{color:'#1e2438'}}},
+    series:[{type:'bar',data:WEEKS.map(function(w){return wt[w]||0;}),barMaxWidth:22,
+      itemStyle:{color:'rgba(99,102,241,.5)',borderRadius:[3,3,0,0]}
     }]
   });
 }
 
-function renderT2TGI() {
-  const chart = echarts.getInstanceByDom(document.getElementById('t2-tgi'))
-    || echarts.init(document.getElementById('t2-tgi'), 'dark');
-  
-  const emotions = D.overview.top_emotions.filter(e => t2ActiveEmotions.has(e)).slice(0,10);
-  const tgi = D.tgi_matrix;
-  const activeBrandsArr = [...t2ActiveBrands];
-  
-  chart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 70, right: 20, top: 20, bottom: 30 },
-    tooltip: { trigger: 'axis' },
-    legend: { top: 0, textStyle: { color: '#8892b0', fontSize: 11 } },
-    xAxis: { type: 'value', axisLabel: { color: '#6b7280', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#1e2438' } },
-      markLine: { data: [{ xAxis: 100, lineStyle: { color: '#6b7280', type: 'dashed' }, label: { formatter: 'TGI=100' } }] } },
-    yAxis: { type: 'category', data: emotions,
-      axisLabel: { color: '#e2e8f0', fontSize: 11 } },
-    series: activeBrandsArr.map(b => ({
-      name: b, type: 'bar', barMaxWidth: 16,
-      data: emotions.map(e => (tgi[b] && tgi[b][e]) || 0),
-      itemStyle: { color: BRAND_COLORS[b] || '#6366f1', borderRadius: [0,3,3,0] },
-      label: { show: false }
-    }))
-  });
-}
+function renderT1(){t1Pills();t1Bar();t1Donut();t1Week();}
 
-function renderT2Radar() {
-  const chart = echarts.getInstanceByDom(document.getElementById('t2-radar'))
-    || echarts.init(document.getElementById('t2-radar'), 'dark');
-  
-  const emotions = D.overview.top_emotions.slice(0,10);
-  const sov = D.sov_matrix;
-  const brands = D.meta.brands;
-  
-  const maxVal = Math.max(...brands.flatMap(b => emotions.map(e => (sov[b] && sov[b][e]) || 0)));
-  
-  chart.setOption({
-    backgroundColor: 'transparent',
-    tooltip: { trigger: 'item' },
-    legend: { bottom: 0, textStyle: { color: '#8892b0', fontSize: 12 } },
-    radar: {
-      indicator: emotions.map(e => ({ name: e, max: maxVal + 5 })),
-      center: ['50%', '50%'],
-      radius: '65%',
-      axisLine: { lineStyle: { color: '#2d3a5a' } },
-      splitLine: { lineStyle: { color: '#1e2438' } },
-      axisName: { color: '#8892b0', fontSize: 12 },
-    },
-    series: [{
-      type: 'radar',
-      data: brands.map(b => ({
-        name: b,
-        value: emotions.map(e => (sov[b] && sov[b][e]) || 0),
-        itemStyle: { color: BRAND_COLORS[b] || '#6366f1' },
-        lineStyle: { color: BRAND_COLORS[b] || '#6366f1', width: 2 },
-        areaStyle: { color: (BRAND_COLORS[b] || '#6366f1') + '30' },
-      }))
-    }]
-  });
-}
+// ══════════════════════════════════════════════════════
+// Tab2: 情绪 Over Time
+// ══════════════════════════════════════════════════════
+var t2sel=['惊喜','愉悦','好感','失望','遗憾'];
+var t2mode='count';
+var MAX_SEL=8;
 
-function renderT2Charts() {
-  renderT2Heatmap(); renderT2TGI(); renderT2Radar();
-}
-
-function renderTab2() {
-  renderT2Pills();
-  renderT2BrandChips();
-  renderT2Charts();
-}
-
-// ==================== Tab3: 惊喜 Over Time ====================
-function renderTab3() {
-  const sot = D.surprise_over_time;
-  const brands = D.meta.brands;
-  const weeks = D.meta.weeks;
-  const weekLabels = weeks.map(w => w.replace('20','').replace('年第','W').replace('周',''));
-  
-  // 指标卡片
-  const metricsContainer = document.getElementById('surprise-metrics');
-  metricsContainer.innerHTML = brands.map(b => {
-    const counts = sot[b] && sot[b].counts || [];
-    const rates = sot[b] && sot[b].rates || [];
-    const totalSurprise = counts.reduce((a,c)=>a+c, 0);
-    const avgRate = rates.length > 0 ? (rates.reduce((a,c)=>a+c,0)/rates.length).toFixed(1) : '0.0';
-    const maxRate = rates.length > 0 ? Math.max(...rates).toFixed(1) : '0.0';
-    return `
-      <div class="metric-card">
-        <div style="font-size:13px;font-weight:600;color:${BRAND_COLORS[b]||'#6366f1'};margin-bottom:8px;">${b}</div>
-        <div class="metric-val">${totalSurprise}</div>
-        <div class="metric-label">惊喜情绪笔记</div>
-        <div class="metric-sub">平均率 ${avgRate}% · 峰值 ${maxRate}%</div>
-      </div>
-    `;
+function t2Pills(){
+  var c=document.getElementById('t2pills');
+  c.innerHTML=EMOTIONS.map(function(e){
+    var on=t2sel.indexOf(e)>=0;
+    return '<span class="pill '+(isPos(e)?'pos':'neg')+' '+(on?'':'off')+'" onclick="t2Toggle(\''+e+'\')">'+e+'</span>';
   }).join('');
-  
-  // 惊喜量柱图（分品牌）
-  const countChart = echarts.getInstanceByDom(document.getElementById('t3-surprise-count'))
-    || echarts.init(document.getElementById('t3-surprise-count'), 'dark');
-  countChart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 40, right: 20, top: 20, bottom: 60 },
-    tooltip: { trigger: 'axis' },
-    legend: { bottom: 0, textStyle: { color: '#8892b0', fontSize: 11 } },
-    xAxis: { type: 'category', data: weekLabels,
-      axisLabel: { color: '#6b7280', fontSize: 10, rotate: 30 } },
-    yAxis: { type: 'value', axisLabel: { color: '#6b7280', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#1e2438' } } },
-    series: brands.map(b => ({
-      name: b, type: 'bar', stack: 'surprise',
-      data: (sot[b] && sot[b].counts) || weeks.map(()=>0),
-      itemStyle: { color: BRAND_COLORS[b] || '#6366f1' },
-      barMaxWidth: 30,
-    }))
-  });
-  
-  // 惊喜率折线
-  const rateChart = echarts.getInstanceByDom(document.getElementById('t3-surprise-rate'))
-    || echarts.init(document.getElementById('t3-surprise-rate'), 'dark');
-  rateChart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 40, right: 20, top: 20, bottom: 60 },
-    tooltip: { trigger: 'axis', formatter: p => p.map(i => `${i.seriesName}: ${i.value}%`).join('<br>') },
-    legend: { bottom: 0, textStyle: { color: '#8892b0', fontSize: 11 } },
-    xAxis: { type: 'category', data: weekLabels,
-      axisLabel: { color: '#6b7280', fontSize: 10, rotate: 30 } },
-    yAxis: { type: 'value', axisLabel: { color: '#6b7280', fontSize: 11,
-      formatter: v => v+'%' }, splitLine: { lineStyle: { color: '#1e2438' } } },
-    series: brands.map(b => ({
-      name: b, type: 'line',
-      data: (sot[b] && sot[b].rates) || weeks.map(()=>0),
-      lineStyle: { color: BRAND_COLORS[b], width: 2.5 },
-      itemStyle: { color: BRAND_COLORS[b] },
-      areaStyle: { color: (BRAND_COLORS[b]||'#6366f1') + '20' },
-      symbol: 'circle', symbolSize: 6, smooth: true,
-    }))
-  });
-  
-  // 惊喜指数折线（完整版）
-  const lineChart = echarts.getInstanceByDom(document.getElementById('t3-surprise-line'))
-    || echarts.init(document.getElementById('t3-surprise-line'), 'dark');
-  lineChart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 50, right: 20, top: 30, bottom: 60 },
-    tooltip: {
-      trigger: 'axis',
-      formatter: params => {
-        const week = weeks[params[0].dataIndex];
-        return `<b>${week}</b><br>` + params.map(p => 
-          `${p.seriesName}: ${p.value} 条`
-        ).join('<br>');
+  document.getElementById('t2count').textContent=t2sel.length;
+}
+
+function t2Toggle(e){
+  var i=t2sel.indexOf(e);
+  if(i>=0){t2sel.splice(i,1);}
+  else if(t2sel.length<MAX_SEL){t2sel.push(e);}
+  t2Pills();t2Line();t2Heat();
+}
+
+function t2Preset(p){
+  if(p==='top5pos'){t2sel=EMOTIONS.filter(isPos).slice(0,5);}
+  else if(p==='top5neg'){t2sel=EMOTIONS.filter(isNeg).slice(0,5);}
+  else if(p==='surprise'){t2sel=['惊喜'];}
+  else{t2sel=EMOTIONS.slice(0,8);}
+  t2Pills();t2Line();t2Heat();
+}
+
+function setMode(m){
+  t2mode=m;
+  document.getElementById('modeCount').classList.toggle('active',m==='count');
+  document.getElementById('modeRate').classList.toggle('active',m==='rate');
+  t2Line();
+}
+
+function t2Line(){
+  var ch=getOrInit('t2line');
+  var isRate=t2mode==='rate';
+  ch.setOption({
+    backgroundColor:'transparent',
+    grid:{left:50,right:20,top:30,bottom:60},
+    tooltip:{
+      trigger:'axis',
+      formatter:function(params){
+        var w=WEEKS[params[0].dataIndex];
+        return '<b>'+w+'</b><br>'+params.map(function(p){
+          return p.seriesName+': '+p.value+(isRate?'%':' 条');
+        }).join('<br>');
       }
     },
-    legend: { bottom: 0, textStyle: { color: '#8892b0', fontSize: 12 } },
-    xAxis: {
-      type: 'category',
-      data: weekLabels,
-      axisLabel: { color: '#6b7280', fontSize: 11, rotate: 30 },
-      axisLine: { lineStyle: { color: '#2d3a5a' } },
-    },
-    yAxis: {
-      type: 'value',
-      name: '惊喜笔记数',
-      nameTextStyle: { color: '#6b7280', fontSize: 11 },
-      axisLabel: { color: '#6b7280', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#1e2438' } },
-    },
-    series: brands.map(b => ({
-      name: b,
-      type: 'line',
-      data: (sot[b] && sot[b].counts) || weeks.map(()=>0),
-      lineStyle: { color: BRAND_COLORS[b], width: 2.5 },
-      itemStyle: { color: BRAND_COLORS[b] },
-      symbol: 'circle', symbolSize: 7,
-      smooth: false,
-      markPoint: {
-        data: [{ type: 'max', label: { color: '#fff', fontSize: 10 } }],
-        itemStyle: { color: BRAND_COLORS[b] },
-      },
-    }))
+    legend:{bottom:0,textStyle:{color:'#8892b0',fontSize:11},type:'scroll'},
+    xAxis:{type:'category',data:WL,axisLabel:{color:'#6b7280',fontSize:11,rotate:30},axisLine:{lineStyle:{color:'#2d3a5a'}}},
+    yAxis:{type:'value',
+      axisLabel:{color:'#6b7280',fontSize:11,formatter:function(v){return isRate?v+'%':v;}},
+      splitLine:{lineStyle:{color:'#1e2438'}}},
+    series:t2sel.map(function(e,i){
+      var eot=D.emotion_over_time[e]||{};
+      var vals=isRate?(eot.rates||WEEKS.map(function(){return 0;})):(eot.counts||WEEKS.map(function(){return 0;}));
+      return {
+        name:e,type:'line',
+        data:vals,
+        lineStyle:{color:EM_COLORS[i%EM_COLORS.length],width:2},
+        itemStyle:{color:EM_COLORS[i%EM_COLORS.length]},
+        symbol:'circle',symbolSize:5,smooth:false,
+      };
+    })
+  },true);
+}
+
+function t2Heat(){
+  var ch=getOrInit('t2heat');
+  var allE=EMOTIONS;
+  var data=[];
+  var maxV=0;
+  allE.forEach(function(e,ei){
+    WEEKS.forEach(function(w,wi){
+      var wt=D.week_total[w]||1;
+      var cnt=(D.week_emotion[w]&&D.week_emotion[w][e])||0;
+      var rate=+(cnt/wt*100).toFixed(1);
+      data.push([wi,ei,rate]);
+      if(rate>maxV)maxV=rate;
+    });
   });
-  
+  ch.setOption({
+    backgroundColor:'transparent',
+    grid:{left:80,right:90,top:10,bottom:70},
+    xAxis:{type:'category',data:WL,
+      axisLabel:{color:'#8892b0',fontSize:10,rotate:30},
+      splitArea:{show:true,areaStyle:{color:['#1a1d2e','#252a3f']}}},
+    yAxis:{type:'category',data:allE,
+      axisLabel:{color:'#e2e8f0',fontSize:11},
+      splitArea:{show:true}},
+    visualMap:{min:0,max:maxV,calculable:true,
+      inRange:{color:['#1a1d2e','#1e3a5f','#1d4ed8','#6366f1','#a78bfa']},
+      textStyle:{color:'#8892b0'},right:0,top:'center',itemHeight:150},
+    tooltip:{formatter:function(p){
+      return allE[p.data[1]]+' | '+WL[p.data[0]]+'<br>占比: '+p.data[2]+'%';
+    }},
+    series:[{type:'heatmap',data:data,
+      label:{show:true,color:'#fff',fontSize:9,
+        formatter:function(p){return p.data[2]>0?p.data[2]+'%':'';}
+      }
+    }]
+  });
+}
+
+function renderT2(){t2Pills();t2Line();t2Heat();}
+
+// ══════════════════════════════════════════════════════
+// Tab3: 惊喜深挖
+// ══════════════════════════════════════════════════════
+function renderT3(){
+  var eot=D.emotion_over_time['惊喜']||{};
+  var counts=eot.counts||WEEKS.map(function(){return 0;});
+  var rates=eot.rates||WEEKS.map(function(){return 0;});
+  var total=counts.reduce(function(a,c){return a+c;},0);
+  var avgRate=(rates.reduce(function(a,c){return a+c;},0)/rates.length).toFixed(1);
+  var maxVal=Math.max.apply(null,rates);
+  var maxRate=maxVal.toFixed(1);
+  var maxWeek=WL[rates.indexOf(maxVal)];
+
+  document.getElementById('t3metrics').innerHTML=
+    '<div class="mc"><div class="mv">'+total+'</div><div class="ml">惊喜情绪笔记总量</div></div>'+
+    '<div class="mc"><div class="mv">'+avgRate+'%</div><div class="ml">平均惊喜率（各周均值）</div></div>'+
+    '<div class="mc"><div class="mv" style="color:#f87171">'+maxRate+'%</div><div class="ml">峰值惊喜率</div><div class="ms">'+maxWeek+'</div></div>'+
+    '<div class="mc"><div class="mv" style="color:#10b981">'+((DIST['惊喜']||0)/D.meta.total_notes*100).toFixed(1)+'%</div><div class="ml">全期惊喜占比</div></div>';
+
+  // 柱图
+  var bc=getOrInit('t3bar');
+  var maxC=Math.max.apply(null,counts);
+  bc.setOption({
+    backgroundColor:'transparent',
+    grid:{left:40,right:20,top:20,bottom:60},
+    tooltip:{trigger:'axis',formatter:function(p){return WEEKS[p[0].dataIndex]+'<br>惊喜: '+p[0].value+' 条';}},
+    xAxis:{type:'category',data:WL,axisLabel:{color:'#6b7280',fontSize:10,rotate:35}},
+    yAxis:{type:'value',axisLabel:{color:'#6b7280',fontSize:11},splitLine:{lineStyle:{color:'#1e2438'}}},
+    series:[{type:'bar',barMaxWidth:30,
+      data:counts.map(function(v){
+        return {value:v,itemStyle:{color:v===maxC?'#fbbf24':'rgba(99,102,241,.7)',borderRadius:[3,3,0,0]}};
+      }),
+      markPoint:{data:[{type:'max',label:{color:'#fff',fontSize:10}}],itemStyle:{color:'#fbbf24'}}
+    }]
+  });
+
+  // 率折线
+  var rc=getOrInit('t3rate');
+  rc.setOption({
+    backgroundColor:'transparent',
+    grid:{left:45,right:20,top:15,bottom:60},
+    tooltip:{trigger:'axis',formatter:function(p){return WEEKS[p[0].dataIndex]+'<br>惊喜率: '+p[0].value+'%';}},
+    xAxis:{type:'category',data:WL,axisLabel:{color:'#6b7280',fontSize:10,rotate:35}},
+    yAxis:{type:'value',axisLabel:{color:'#6b7280',fontSize:11,formatter:function(v){return v+'%';}},splitLine:{lineStyle:{color:'#1e2438'}}},
+    series:[{type:'line',data:rates,
+      lineStyle:{color:'#fbbf24',width:2.5},
+      itemStyle:{color:'#fbbf24'},
+      areaStyle:{color:'rgba(251,191,36,.15)'},
+      symbol:'circle',symbolSize:6,smooth:false,
+    }]
+  });
+
   // 代表笔记
-  const topSurprise = D.top_surprise_notes;
-  renderNotes('surprise-notes-zhao', topSurprise['赵一鸣']);
-  renderNotes('surprise-notes-lingshi', topSurprise['零食很忙']);
+  var notes=D.surprise_notes||[];
+  document.getElementById('t3notes').innerHTML=notes.map(function(n){
+    return '<div class="note-card">'+
+      '<img class="ni" src="'+(n.image_url||'')+'" onerror="this.style.display=\'none\'"/>'+
+      '<div class="nb">'+
+        '<div class="nt">'+(n.text||'')+'</div>'+
+        '<div class="nm">'+
+          '<span class="ne">曝光 '+fmt(n.exposure||0)+'</span>'+
+          '<span>'+(n.week||'')+'</span>'+
+          '<a class="nk" href="'+(n.note_url||'#')+'" target="_blank">→ 原文</a>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
 }
 
-// ==================== Tab4: 品牌深挖 ====================
-let t4ActiveBrand = D.meta.brands[0];
-let t4ActiveEmotions = null;
-
-function renderT4BrandChips() {
-  const container = document.getElementById('t4-brand-chips');
-  container.innerHTML = D.meta.brands.map(b => `
-    <span class="brand-chip ${t4ActiveBrand===b?'selected':''}"
-      style="${t4ActiveBrand===b?`background:${BRAND_COLORS[b]};border-color:${BRAND_COLORS[b]};`:''}"
-      onclick="t4SelectBrand('${b}')">${b}</span>
-  `).join('');
-}
-
-function t4SelectBrand(b) {
-  t4ActiveBrand = b;
-  renderT4BrandChips(); renderT4Charts();
-}
-
-function t4SelectAll() {
-  t4ActiveEmotions = new Set(Object.keys(D.brand_emotion[t4ActiveBrand] || {}));
-  renderT4Pills(); renderT4Charts();
-}
-function t4SelectPos() {
-  t4ActiveEmotions = new Set(Object.keys(D.brand_emotion[t4ActiveBrand] || {}).filter(isPos));
-  renderT4Pills(); renderT4Charts();
-}
-function t4SelectNeg() {
-  t4ActiveEmotions = new Set(Object.keys(D.brand_emotion[t4ActiveBrand] || {}).filter(isNeg));
-  renderT4Pills(); renderT4Charts();
-}
-
-function renderT4Pills() {
-  const container = document.getElementById('t4-pills');
-  const brandEmotions = D.brand_emotion[t4ActiveBrand] || {};
-  const allEmotions = Object.keys(brandEmotions).sort((a,b) => brandEmotions[b] - brandEmotions[a]);
-  if (t4ActiveEmotions === null) t4ActiveEmotions = new Set(allEmotions);
-  
-  container.innerHTML = allEmotions.map(e => `
-    <span class="pill ${isPos(e)?'pos':'neg'} ${t4ActiveEmotions.has(e)?'active':'inactive'}"
-      onclick="t4ToggleEmotion('${e}')">${e}</span>
-  `).join('');
-}
-
-function t4ToggleEmotion(e) {
-  if (t4ActiveEmotions.has(e)) t4ActiveEmotions.delete(e);
-  else t4ActiveEmotions.add(e);
-  renderT4Pills(); renderT4Charts();
-}
-
-function renderT4Bar() {
-  const chart = echarts.getInstanceByDom(document.getElementById('t4-bar'))
-    || echarts.init(document.getElementById('t4-bar'), 'dark');
-  
-  const brandEmotions = D.brand_emotion[t4ActiveBrand] || {};
-  const emotions = Object.keys(brandEmotions)
-    .filter(e => t4ActiveEmotions.has(e))
-    .sort((a,b) => brandEmotions[b] - brandEmotions[a]);
-  
-  chart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 80, right: 60, top: 10, bottom: 30 },
-    xAxis: { type: 'value', axisLabel: { color: '#6b7280', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#1e2438' } } },
-    yAxis: { type: 'category', data: emotions,
-      axisLabel: { color: '#e2e8f0', fontSize: 12 },
-      axisLine: { lineStyle: { color: '#2d3a5a' } } },
-    tooltip: { trigger: 'axis' },
-    series: [{
-      type: 'bar',
-      data: emotions.map(e => ({
-        value: brandEmotions[e],
-        itemStyle: { color: emotionColor(e), borderRadius: [0,3,3,0] }
-      })),
-      barMaxWidth: 24,
-      label: { show: true, position: 'right', color: '#94a3b8', fontSize: 11 }
-    }]
+// ── resize ──
+window.addEventListener('resize',function(){
+  ['t1bar','t1donut','t1week','t2line','t2heat','t3bar','t3rate'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){var c=echarts.getInstanceByDom(el);if(c)c.resize();}
   });
-}
-
-function renderT4Table() {
-  const container = document.getElementById('t4-table-container');
-  const brandEmotions = D.brand_emotion[t4ActiveBrand] || {};
-  const sov = D.sov_matrix[t4ActiveBrand] || {};
-  const tgi = D.tgi_matrix[t4ActiveBrand] || {};
-  const total = D.brand_total[t4ActiveBrand] || 1;
-  
-  const emotions = Object.keys(brandEmotions)
-    .filter(e => t4ActiveEmotions.has(e))
-    .sort((a,b) => brandEmotions[b] - brandEmotions[a])
-    .slice(0,20);
-  
-  function tgiClass(v) {
-    if (v >= 120) return 'tgi-high';
-    if (v >= 80) return 'tgi-mid';
-    return 'tgi-low';
-  }
-  
-  container.innerHTML = `
-    <table class="data-table">
-      <thead><tr>
-        <th>情绪</th><th>极性</th><th>条数</th><th>SOV%</th><th>TGI</th>
-      </tr></thead>
-      <tbody>
-        ${emotions.map(e => `
-          <tr>
-            <td>${e}</td>
-            <td style="color:${emotionColor(e)}">${isPos(e)?'正面':isNeg(e)?'负面':'混合'}</td>
-            <td>${brandEmotions[e]}</td>
-            <td>${sov[e]||0}%</td>
-            <td class="${tgiClass(tgi[e]||0)}">${tgi[e]||0}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-}
-
-function renderT4Timeline() {
-  const chart = echarts.getInstanceByDom(document.getElementById('t4-timeline'))
-    || echarts.init(document.getElementById('t4-timeline'), 'dark');
-  
-  const emotion = document.getElementById('t4-emotion-select').value;
-  const weeks = D.meta.weeks;
-  const weekLabels = weeks.map(w => w.replace('20','').replace('年第','W').replace('周',''));
-  
-  const data = weeks.map(w => {
-    const weekEmotions = D.brand_week_emotion[t4ActiveBrand] && D.brand_week_emotion[t4ActiveBrand][w];
-    return (weekEmotions && weekEmotions[emotion]) || 0;
-  });
-  
-  chart.setOption({
-    backgroundColor: 'transparent',
-    grid: { left: 40, right: 20, top: 20, bottom: 60 },
-    tooltip: { trigger: 'axis', formatter: p => `${weeks[p[0].dataIndex]}<br>${emotion}: ${p[0].value} 条` },
-    xAxis: { type: 'category', data: weekLabels,
-      axisLabel: { color: '#6b7280', fontSize: 11, rotate: 30 },
-      axisLine: { lineStyle: { color: '#2d3a5a' } } },
-    yAxis: { type: 'value', axisLabel: { color: '#6b7280', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#1e2438' } } },
-    series: [{
-      name: emotion,
-      type: 'line',
-      data: data,
-      lineStyle: { color: emotionColor(emotion), width: 2.5 },
-      itemStyle: { color: emotionColor(emotion) },
-      areaStyle: { color: emotionColor(emotion) + '25' },
-      symbol: 'circle', symbolSize: 7, smooth: true,
-    }]
-  });
-}
-
-function renderT4Charts() {
-  renderT4Bar();
-  renderT4Table();
-  renderT4Timeline();
-}
-
-function renderTab4() {
-  t4ActiveEmotions = null;
-  renderT4BrandChips();
-  renderT4Pills();
-  renderT4Charts();
-}
-
-// ==================== 初始化 ====================
-window.addEventListener('load', () => {
-  initStats();
-  renderTab1();
 });
 
-window.addEventListener('resize', () => {
-  echarts.getInstanceByDom(document.getElementById('t1-bar'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t1-donut'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t1-trend'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t2-heatmap'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t2-tgi'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t2-radar'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t3-surprise-count'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t3-surprise-rate'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t3-surprise-line'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t4-bar'))?.resize();
-  echarts.getInstanceByDom(document.getElementById('t4-timeline'))?.resize();
-});
+// ── boot ──
+initStats();
+renderT1();
+
 </script>
 </body>
 </html>
